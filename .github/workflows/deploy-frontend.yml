@@ -1,40 +1,43 @@
-name: 部署前端
+name: Deploy Frontend
 
 on:
   push:
     branches: [ master ]
     paths:
-      - 'AyeezBlog-Frontend/**'
+      - '*Blog-Frontend/**'
+      - '.github/workflows/deploy-frontend.yml'
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: 检出代码
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: 设置 Node.js 环境
+      - name: Detect frontend directory
+        run: echo "FRONTEND_DIR=$(find . -maxdepth 1 -type d -name '*Blog-Frontend' | sort -r | head -n 1 | sed 's#^./##')" >> $GITHUB_ENV
+
+      - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 18
-          cache: 'npm'
-          cache-dependency-path: AyeezBlog-Frontend/package-lock.json
+          cache: npm
+          cache-dependency-path: ${{ env.FRONTEND_DIR }}/package-lock.json
 
-      - name: 安装依赖
-        working-directory: ./AyeezBlog-Frontend
+      - name: Install dependencies
+        working-directory: ./${{ env.FRONTEND_DIR }}
         run: npm ci
 
-      - name: 构建项目
-        working-directory: ./AyeezBlog-Frontend
+      - name: Build project
+        working-directory: ./${{ env.FRONTEND_DIR }}
         run: npm run build
 
-      # 同步到站点根目录；排除 admin/，避免覆盖管理端（管理端由 deploy-adminpanel 部署）
-      - name: 部署到服务器（rsync）
+      - name: Deploy to server
         uses: burnett01/rsync-deployments@7.0.1
         with:
           switches: -avz --delete --exclude=admin/
-          path: AyeezBlog-Frontend/dist/
+          path: ${{ env.FRONTEND_DIR }}/dist/
           remote_path: /var/lib/docker/volumes/html/_data/
           remote_host: ${{ secrets.SERVER_HOST }}
           remote_user: ${{ secrets.SERVER_USER }}

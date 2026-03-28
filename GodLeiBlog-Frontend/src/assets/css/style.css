@@ -1,0 +1,51 @@
+html,
+body {
+  width: 100%;
+  overflow-x: clip;
+  overscroll-behavior-x: none;
+}
+
+#app {
+  width: 100%;
+  overflow-x: clip;
+  overscroll-behavior-x: none;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  --site-home-bg-image: url("https://qiniu.ayeez.cn/bg.jpg");
+  background-image:
+    radial-gradient(circle at 12% 14%, rgba(122, 29, 45, 0.24), transparent 24%),
+    radial-gradient(circle at 86% 10%, rgba(214, 173, 92, 0.14), transparent 18%),
+    linear-gradient(180deg, rgba(7, 2, 4, 0.3), rgba(6, 2, 4, 0.68)),
+    var(--site-home-bg-image);
+  background-size: auto, auto, auto, cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: scroll, scroll, scroll, fixed;
+  overflow-y: scroll;
+  color: white;
+  touch-action: pan-y;
+}
+
+::-webkit-scrollbar {
+  width: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: #12070a;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--theme-accent-deep);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--theme-accent);
+}

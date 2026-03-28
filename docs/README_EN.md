@@ -1,31 +1,31 @@
-# AyeezBlog
+# GodLeiBlog
 
 > Note: The project is under active development. Core features are already usable, and more features are coming soon.
 
-Progress demo: https://dev-blog.ayeez.cn
+Progress demo: https://dev-blog.godlei.cn
 
 ## Language
 
 - [中文文档](../README.md)
 
 <p align="center">
-  <a href="https://github.com/Ayeez757/AyeezBlog/blob/master/AyeezBlog-Frontend/package.json">
-    <img alt="Project version" src="https://img.shields.io/github/package-json/v/ayeez757/AyeezBlog?filename=AyeezBlog-Frontend%2Fpackage.json&label=AyeezBlog%20version">
+  <a href="https://github.com/godlei/GodLeiBlog/blob/master/GodLeiBlog-Frontend/package.json">
+    <img alt="Project version" src="https://img.shields.io/github/package-json/v/godlei/GodLeiBlog?filename=GodLeiBlog-Frontend%2Fpackage.json&label=GodLeiBlog%20version">
   </a>
-  <a href="https://github.com/ayeez757/AyeezBlog/blob/master/LICENSE">
-    <img alt="License" src="https://img.shields.io/github/license/ayeez757/AyeezBlog">
+  <a href="https://github.com/godlei/GodLeiBlog/blob/master/LICENSE">
+    <img alt="License" src="https://img.shields.io/github/license/godlei/GodLeiBlog">
   </a>
   <img alt="Spring Boot" src="https://img.shields.io/badge/Spring%20Boot-3.2.0-6DB33F?logo=spring">
   <img alt="Java" src="https://img.shields.io/badge/Java-21-007396?logo=java">
 </p>
 
-Project demo: https://dev-blog.ayeez.cn/
+Project demo: https://dev-blog.godlei.cn/
 
-![](https://qiniu.ayeez.cn/20260228215441383.jpg)
+![](https://qiniu.godlei.cn/20260228215441383.jpg)
 
 ## Introduction
 
-**AyeezBlog** is an open-source blog system built with a frontend-backend separated architecture. The public site is built with Vue 3 and focuses on reading experience and content presentation; the admin panel focuses on content operations such as post, category, and tag management; the backend is based on Spring Boot and provides stable, clear RESTful APIs with good scalability and maintainability.
+**GodLeiBlog** is an open-source blog system built with a frontend-backend separated architecture. The public site is built with Vue 3 and focuses on reading experience and content presentation; the admin panel focuses on content operations such as post, category, and tag management; the backend is based on Spring Boot and provides stable, clear RESTful APIs with good scalability and maintainability.
 
 The project centers around "content creation + reader interaction + admin management", including common blog capabilities such as a Markdown-based post system, comments, category/tag organization, archives, and friend links. The overall stack covers frontend engineering, backend security and data access, caching, containerized deployment, and automation workflows, making it suitable for personal blogs, tech communities, and small-to-medium content sites.
 
@@ -107,32 +107,32 @@ Core page features:
 
 #### 1. Clone repository
 ```bash
-git clone https://github.com/Ayeez757/AyeezBlog.git
-cd AyeezBlog
+git clone https://github.com/godlei/GodLeiBlog.git
+cd GodLeiBlog
 ```
 
 #### 2. Initialize database
-- Create database: `ayeezblog` (recommended charset: `utf8mb4`)
-- Run schema script in project root: `AyeezBlog建表.sql`
+- Create database: `godleiblog` (recommended charset: `utf8mb4`)
+- Run schema script in project root: `GodLeiBlog建表.sql`
 
 #### 3. Start backend (`blog-server`)
 ```bash
-cd AyeezBlog-Backend
+cd GodLeiBlog-Backend
 mvn -pl blog-server -am spring-boot:run "-Dspring-boot.run.jvmArguments=-Dhm.db.host=localhost -Dhm.db.password=your_db_password"
 ```
 Default API: `http://localhost:8080`
 
-#### 4. Start frontend (`AyeezBlog-Frontend`)
+#### 4. Start frontend (`GodLeiBlog-Frontend`)
 ```bash
-cd AyeezBlog-Frontend
+cd GodLeiBlog-Frontend
 npm install
 npm run dev
 ```
 Visit: `http://localhost:5173`
 
-#### 5. Start admin panel (`AyeezBlog-AdminPanel`)
+#### 5. Start admin panel (`GodLeiBlog-AdminPanel`)
 ```bash
-cd AyeezBlog-AdminPanel
+cd GodLeiBlog-AdminPanel
 npm install
 npm run dev
 ```
@@ -174,7 +174,7 @@ docker exec -i blog-mysql mysql -uroot -p${MYSQL_ROOT_PASSWORD} blog < sql/init.
 | `spring.datasource.password` | MySQL password | `${hm.db.password}` | Yes |
 | `server.port` | Backend port | `8080` | Optional |
 | `aliyun.oss.endpoint` | OSS endpoint | `https://oss-cn-beijing.aliyuncs.com` | Yes |
-| `aliyun.oss.bucketName` | OSS bucket name | `javaweb-ayeez` | Yes |
+| `aliyun.oss.bucketName` | OSS bucket name | `javaweb-godlei` | Yes |
 | `aliyun.oss.region` | OSS region | `cn-beijing` | Yes |
 
 ---
@@ -228,8 +228,8 @@ Contributions are welcome, including:
 
 ## Changelog
 
-- In-site logs: https://dev-blog.ayeez.cn/logs/
-- GitHub activity: [Activity · Ayeez757/AyeezBlog](https://github.com/Ayeez757/AyeezBlog/activity)
+- In-site logs: https://dev-blog.godlei.cn/logs/
+- GitHub activity: [Activity · godlei/GodLeiBlog](https://github.com/godlei/GodLeiBlog/activity)
 
 ---
 
@@ -241,10 +241,10 @@ This project is open-sourced under the [Apache License 2.0](../LICENSE).
 
 ## Contact
 
-- Author: Ayeez
+- Author: GodLei
 - Email: 3406608593@qq.com
-- Blog: https://blog.ayeez.cn / https://dev.ayeez.cn
-- GitHub Issues: https://github.com/ayeez757/AyeezBlog/issues
+- Blog: https://blog.godlei.cn / https://dev.godlei.cn
+- GitHub Issues: https://github.com/godlei/GodLeiBlog/issues
 
 ---
 

@@ -1,0 +1,36 @@
+@import "./base.css";
+
+:root {
+  --theme-accent-deep: #18090d;
+  --theme-accent: #4a121d;
+  --theme-accent-strong: #d6ad5c;
+  --theme-accent-soft: #f3ddbf;
+  --theme-accent-text: #e3bb70;
+  --theme-accent-text-soft: #f6e7c6;
+  --theme-accent-text-strong: #fff7ea;
+  --theme-accent-title-gradient: linear-gradient(110deg, #fff6ea 0%, #f0dbb4 26%, #d6ad5c 58%, #9a4e40 100%);
+  --theme-accent-line-horizontal: linear-gradient(90deg, rgba(24, 9, 13, 0), rgba(214, 173, 92, 0.95), rgba(24, 9, 13, 0));
+  --theme-accent-line-vertical: linear-gradient(180deg, #7a1d2d 0%, #f1d39c 52%, #8e4a3a 100%);
+  --theme-accent-panel-soft: linear-gradient(135deg, rgba(82, 18, 30, 0.34), rgba(14, 5, 9, 0.92) 56%, rgba(214, 173, 92, 0.14));
+  --theme-accent-panel: linear-gradient(135deg, rgba(74, 18, 29, 0.44), rgba(10, 4, 6, 0.95) 62%, rgba(214, 173, 92, 0.16));
+  --theme-accent-panel-button: linear-gradient(135deg, rgba(74, 18, 29, 0.48), rgba(18, 7, 11, 0.96) 58%, rgba(214, 173, 92, 0.1));
+  --theme-accent-surface-soft: rgba(214, 173, 92, 0.08);
+  --theme-accent-surface: rgba(214, 173, 92, 0.14);
+  --theme-accent-surface-strong: rgba(214, 173, 92, 0.2);
+  --theme-accent-border-soft: rgba(214, 173, 92, 0.18);
+  --theme-accent-border: rgba(214, 173, 92, 0.36);
+  --theme-accent-border-strong: rgba(246, 231, 198, 0.76);
+  --theme-accent-shadow-soft: rgba(12, 3, 5, 0.34);
+  --theme-accent-shadow: rgba(12, 3, 5, 0.48);
+  --theme-accent-shadow-strong: rgba(12, 3, 5, 0.68);
+  --theme-accent-glow-soft: rgba(214, 173, 92, 0.14);
+  --theme-accent-glow: rgba(214, 173, 92, 0.3);
+  --theme-accent-scanline: linear-gradient(to bottom, transparent, rgba(246, 231, 198, 0.36), rgba(214, 173, 92, 0.24), transparent);
+  --theme-accent-arrow: #d6ad5c;
+  --theme-accent-selection: rgba(214, 173, 92, 0.24);
+}
+
+::selection {
+  background: var(--theme-accent-selection);
+  color: var(--theme-accent-text-strong);
+}

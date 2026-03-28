@@ -4,7 +4,7 @@ on:
   push:
     branches: [ master ]
     paths:
-      - 'AyeezBlog-Backend/**'
+      - '*Blog-Backend/**'
       - '.github/workflows/deploy-backend.yml'
 
 jobs:
@@ -13,19 +13,21 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+
+      - name: Detect backend directory
+        run: echo "BACKEND_DIR=$(find . -maxdepth 1 -type d -name '*Blog-Backend' | sort -r | head -n 1 | sed 's#^./##')" >> $GITHUB_ENV
 
       - name: Set up JDK 21
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           java-version: '21'
-          distribution: 'temurin'
-          cache: 'maven'
+          distribution: temurin
+          cache: maven
 
       - name: Build with Maven
-        working-directory: ./AyeezBlog-Backend
-        run: |
-          mvn clean package -DskipTests
+        working-directory: ./${{ env.BACKEND_DIR }}
+        run: mvn clean package -DskipTests
 
       - name: Deploy to server
         env:
@@ -33,76 +35,34 @@ jobs:
           SSH_USER: ${{ secrets.SERVER_USER }}
           SSH_KEY: ${{ secrets.SERVER_SSH_KEY }}
           DB_PASSWORD: ${{ secrets.HM_DB_PASSWORD }}
+          BACKEND_DIR: ${{ env.BACKEND_DIR }}
         run: |
-
-
           if ! command -v ssh >/dev/null 2>&1 || ! command -v scp >/dev/null 2>&1; then
-            echo "⚠️ 未检测到 ssh/scp，开始安装 openssh-client..."
             sudo apt-get update
             sudo apt-get install -y openssh-client
-          else
-            echo "✅ ssh/scp 已存在，跳过安装"
           fi
-          
+
           mkdir -p ~/.ssh
           echo "$SSH_KEY" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H $SSH_HOST >> ~/.ssh/known_hosts 2>/dev/null
-          
-          echo "📦 开始部署后端服务..."
-          
-          # 调试1：检查本地 DB_PASSWORD 变量
-          echo "🔍 调试1：本地 DB_PASSWORD 长度 = ${#DB_PASSWORD}"
-          if [ -z "$DB_PASSWORD" ]; then
-            echo "❌ 错误：本地 DB_PASSWORD 为空！请检查 GitHub Secrets"
-            exit 1
-          else
-            echo "✅ 本地 DB_PASSWORD 非空，长度: ${#DB_PASSWORD}"
-          fi
+          ssh-keyscan -H "$SSH_HOST" >> ~/.ssh/known_hosts 2>/dev/null
 
-          echo "🗑️  删除旧的 jar包..."
-          ssh ${SSH_USER}@${SSH_HOST} "rm -f /var/lib/docker/volumes/jar/_data/*.jar"
+          ssh "${SSH_USER}@${SSH_HOST}" "rm -f /var/lib/docker/volumes/jar/_data/*.jar"
 
-          
-          echo "⬆️  上传新的jar包..."
-          scp AyeezBlog-Backend/blog-server/target/blog-server-0.0.1-SNAPSHOT.jar \
-              ${SSH_USER}@${SSH_HOST}:/var/lib/docker/volumes/jar/_data/app.jar
+          scp "${BACKEND_DIR}/blog-server/target/blog-server-0.0.1-SNAPSHOT.jar" \
+            "${SSH_USER}@${SSH_HOST}:/var/lib/docker/volumes/jar/_data/app.jar"
 
-          
-          echo "🔄 重启 Docker 容器并注入环境变量..."
-          # 关键修复：去掉 'EOF' 的单引号，让本地变量展开
-          ssh ${SSH_USER}@${SSH_HOST} << EOF
+          ssh "${SSH_USER}@${SSH_HOST}" << EOF
+            docker stop godleiblog-backend || true
+            docker rm godleiblog-backend || true
 
-
-            echo "🔍 调试2：远程脚本开始执行"
-            echo "🔍 调试2：接收到的密码长度：${#DB_PASSWORD}"
-            echo "🔍 调试2：密码前4位（仅验证）：${DB_PASSWORD:0:4}****"
-          
-            docker stop ayeezblog-backend || true
-            docker rm ayeezblog-backend || true
-          
-            # 使用双引号包裹密码，防止特殊字符导致问题
-            docker run -d \\
-              --name ayeezblog-backend \\
-              --network ayeez \\
-              -e HM_DB_HOST=mysql \\
-              -e "HM_DB_PASSWORD=${DB_PASSWORD}" \\
-              -e SPRING_PROFILES_ACTIVE=dev \\
-              -p 8080:8080 \\
-              -v /var/lib/docker/volumes/jar/_data/app.jar:/app/app.jar \\
-              ayeezblog:latest
-          
-            # 等待容器启动
-            sleep 3
-          
-            echo "🔍 调试3：容器内环境变量检查："
-            docker exec ayeezblog-backend env | grep HM_DB_PASSWORD || echo "❌ 容器内未找到 HM_DB_PASSWORD"
-          
-            echo "✅ 后端部署完成！"
+            docker run -d \
+              --name godleiblog-backend \
+              --network godlei \
+              -e HM_DB_HOST=mysql \
+              -e "HM_DB_PASSWORD=${DB_PASSWORD}" \
+              -e SPRING_PROFILES_ACTIVE=dev \
+              -p 8080:8080 \
+              -v /var/lib/docker/volumes/jar/_data/app.jar:/app/app.jar \
+              godleiblog:latest
           EOF
-          
-          # 调试4：从宿主机再次验证
-          echo "🔍 调试4：从宿主机二次验证容器环境变量："
-          ssh ${SSH_USER}@${SSH_HOST} "docker exec ayeezblog-backend env | grep HM_DB_PASSWORD || echo '❌ 未找到'"
-          
-          echo "🌐 服务地址：http://${SSH_HOST}:8080"

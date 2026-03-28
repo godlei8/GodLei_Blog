@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.godlei.blogserver.mapper.SiteSettingMapper">
+
+    <select id="getByKey" resultType="cn.godlei.blogpojo.entity.SiteSetting">
+        SELECT
+            setting_key AS settingKey,
+            setting_value AS settingValue,
+            setting_desc AS settingDesc,
+            created_at AS createdAt,
+            updated_at AS updatedAt
+        FROM blog_site_setting
+        WHERE setting_key = #{settingKey}
+    </select>
+
+    <insert id="upsert">
+        INSERT INTO blog_site_setting (setting_key, setting_value, setting_desc)
+        VALUES (#{settingKey}, #{settingValue}, #{settingDesc})
+        ON DUPLICATE KEY UPDATE
+            setting_value = VALUES(setting_value),
+            setting_desc = VALUES(setting_desc),
+            updated_at = CURRENT_TIMESTAMP
+    </insert>
+</mapper>

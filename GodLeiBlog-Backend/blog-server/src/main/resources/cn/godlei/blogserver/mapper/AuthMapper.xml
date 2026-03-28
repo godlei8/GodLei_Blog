@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.godlei.blogserver.mapper.AuthMapper">
+
+    <select id="findByUsername" resultType="cn.godlei.blogpojo.po.Auth">
+        SELECT id,
+               username,
+               password,
+               nickname,
+               role,
+               status
+        FROM `user`
+        WHERE username = #{username}
+        LIMIT 1
+    </select>
+
+    <select id="countAdminUsers" resultType="int">
+        SELECT COUNT(1)
+        FROM `user`
+        WHERE role = 1
+    </select>
+
+    <select id="countUsersByUsername" resultType="int">
+        SELECT COUNT(1)
+        FROM `user`
+        WHERE username = #{username}
+    </select>
+
+    <insert id="insertDefaultAdmin">
+        INSERT INTO `user` (username, nickname, password, role, status)
+        VALUES (#{username}, 'GodLei', #{password}, 1, 1)
+    </insert>
+</mapper>

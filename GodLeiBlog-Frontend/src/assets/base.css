@@ -1,0 +1,37 @@
+:root {
+  --color-background: #060203;
+  --color-background-soft: #120608;
+  --color-background-mute: #18090d;
+  --color-border: rgba(214, 173, 92, 0.12);
+  --color-border-hover: rgba(214, 173, 92, 0.24);
+  --color-heading: #fff7ea;
+  --color-text: rgba(255, 238, 220, 0.9);
+  --section-gap: 160px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  position: relative;
+  font-weight: normal;
+}
+
+body {
+  min-height: 100vh;
+  color: var(--color-text);
+  background: var(--color-background);
+  transition: color 0.5s, background-color 0.5s;
+  line-height: 1.6;
+  font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  font-size: 15px;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body,
+#app {
+  min-height: 100vh;
+}

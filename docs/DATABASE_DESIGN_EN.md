@@ -1,6 +1,6 @@
 # Database Design
 
-This document describes the database design for the `AyeezBlog` project (MySQL 8+).
+This document describes the database design for the `GodLeiBlog` project (MySQL 8+).
 
 ## User Table
 

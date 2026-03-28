@@ -1,20 +1,20 @@
 
 
-# 阿叶Ayeez的博客
+# god磊的博客
 
 - [中文](./README.md) | [English](./docs/README_EN.md)
 
-![](https://qiniu.ayeez.cn/20260228215441383.jpg)
+![](https://qiniu.godlei.cn/20260228215441383.jpg)
 
 
-项目demo：[https://blog.ayeez.cn/](https://blog.ayeez.cn/)
+项目demo：[https://blog.godlei.cn/](https://blog.godlei.cn/)
 
 
 <p align="center">
-    <a href="https://github.com/Ayeez757/AyeezBlog/blob/master/AyeezBlog-Frontend/package.json">
-    <img alt="项目版本" src="https://img.shields.io/github/package-json/v/ayeez757/AyeezBlog?filename=AyeezBlog-Frontend%2Fpackage.json&label=AyeezBlog%20version">
+    <a href="https://github.com/godlei/GodLeiBlog/blob/master/GodLeiBlog-Frontend/package.json">
+    <img alt="项目版本" src="https://img.shields.io/github/package-json/v/godlei/GodLeiBlog?filename=GodLeiBlog-Frontend%2Fpackage.json&label=GodLeiBlog%20version">
   </a>
-  <a href="https://github.com/ayeez757/AyeezBlog/blob/master/LICENSE"><img alt="许可证" src="https://img.shields.io/github/license/ayeez757/AyeezBlog"></a>
+  <a href="https://github.com/godlei/GodLeiBlog/blob/master/LICENSE"><img alt="许可证" src="https://img.shields.io/github/license/godlei/GodLeiBlog"></a>
   <!-- Spring Boot 版本（从 parent.version 手动获取） -->
   <img alt="Spring Boot" src="https://img.shields.io/badge/Spring%20Boot-3.2.0-6DB33F?logo=spring">
   <!-- Java 版本（从 properties.java.version 手动获取） -->
@@ -30,7 +30,7 @@
 
 ## 项目简介
 
-**AyeezBlog** 是一个开源的博客系统，采用前后端分离架构设计。前台基于 Vue 3 构建，聚焦阅读体验与内容展示；管理端面向内容管理场景，便于文章、分类、标签等信息的统一维护；后端基于 Spring Boot 提供稳定、清晰的 RESTful API 能力，兼顾扩展性与可维护性。
+**GodLeiBlog** 是一个开源的博客系统，采用前后端分离架构设计。前台基于 Vue 3 构建，聚焦阅读体验与内容展示；管理端面向内容管理场景，便于文章、分类、标签等信息的统一维护；后端基于 Spring Boot 提供稳定、清晰的 RESTful API 能力，兼顾扩展性与可维护性。
 
 项目以“内容创作 + 阅读互动 + 后台管理”作为核心方向，支持 Markdown 文章体系、评论互动、分类标签组织、归档与友链等博客常用能力。整体技术栈覆盖前端工程化、后端安全与数据访问、缓存、容器化部署和自动化流程，适用于个人博客、技术社区与中小型内容站点的搭建和二次开发。
 
@@ -138,9 +138,9 @@
 
 ```bash
 
-git clone https://github.com/Ayeez757/AyeezBlog.git
+git clone https://github.com/godlei/GodLeiBlog.git
 
-cd AyeezBlog
+cd GodLeiBlog
 
 ```
 
@@ -150,9 +150,9 @@ cd AyeezBlog
 
   
 
-- 创建数据库：`ayeezblog`（字符集建议 `utf8mb4`）。
+- 创建数据库：`godleiblog`（字符集建议 `utf8mb4`）。
 
-- 执行项目根目录建表脚本：`AyeezBlog建表.sql`。
+- 执行项目根目录建表脚本：`GodLeiBlog建表.sql`。
 
   
 
@@ -166,7 +166,7 @@ cd AyeezBlog
 
 ```bash
 
-cd AyeezBlog-Backend
+cd GodLeiBlog-Backend
 
 mvn clean install
 
@@ -182,13 +182,13 @@ mvn spring-boot:run "-Dspring-boot.run.jvmArguments=-Dhm.db.host=localhost -Dhm.
 
   
 
-#### 4. 启动前台（AyeezBlog-Frontend）
+#### 4. 启动前台（GodLeiBlog-Frontend）
 
 新建控制台，回到项目根目录，执行如下指令：
 
 ```bash
 
-cd AyeezBlog-Frontend
+cd GodLeiBlog-Frontend
 
 npm install
 
@@ -204,13 +204,13 @@ npm run dev
 
   
 
-#### 5. 启动管理端（AyeezBlog-AdminPanel）
+#### 5. 启动管理端（GodLeiBlog-AdminPanel）
 
 新建控制台，回到项目根目录，执行如下指令：
 
 ```bash
 
-cd AyeezBlog-AdminPanel
+cd GodLeiBlog-AdminPanel
 
 npm install
 
@@ -239,14 +239,14 @@ npm run dev
 | --- | --- | --- | --- |
 | `hm.db.host` | MySQL 主机名/IP（用于拼接 `spring.datasource.url`） | `mysql` 或 `localhost` | ✅ |
 | `hm.db.password` | MySQL 密码 | `${HM_DB_PASSWORD}` | ✅ |
-| `spring.datasource.url` | JDBC 数据库连接地址 | `jdbc:mysql://localhost:3306/ayeezblog` | ✅ |
+| `spring.datasource.url` | JDBC 数据库连接地址 | `jdbc:mysql://localhost:3306/godleiblog` | ✅ |
 | `spring.datasource.username` | 数据库用户名 | `root` | ✅ |
 | `spring.datasource.password` | 数据库密码（来自 `${hm.db.password}`） | `${hm.db.password}` | ✅ |
 | `server.port` | 后端服务端口 | `8080` | 按需 |
 | `spring.servlet.multipart.max-file-size` | 单个文件上传上限 | `10MB` | 按需 |
 | `spring.servlet.multipart.max-request-size` | 单次请求上传上限 | `100MB` | 按需 |
 | `aliyun.oss.endpoint` | OSS 地域节点 | `https://oss-cn-beijing.aliyuncs.com` | ✅ |
-| `aliyun.oss.bucketName` | OSS Bucket 名称 | `javaweb-ayeez` | ✅ |
+| `aliyun.oss.bucketName` | OSS Bucket 名称 | `javaweb-godlei` | ✅ |
 | `aliyun.oss.region` | OSS 地域 | `cn-beijing` | ✅ |
 
 
@@ -309,8 +309,8 @@ Apifox：
 ## 更新日志
 
 请参阅
-博客内日志： [https://dev-blog.ayeez.cn/logs/](https://dev-blog.ayeez.cn/logs/)
-GitHub的activity记录：[Activity · Ayeez757/AyeezBlog](https://github.com/Ayeez757/AyeezBlog/activity)
+博客内日志： [https://dev-blog.godlei.cn/logs/](https://dev-blog.godlei.cn/logs/)
+GitHub的activity记录：[Activity · godlei/GodLeiBlog](https://github.com/godlei/GodLeiBlog/activity)
 
 ---
 
@@ -322,10 +322,10 @@ GitHub的activity记录：[Activity · Ayeez757/AyeezBlog](https://github.com/Ay
 
 ## 联系方式
 
-- 作者：[阿叶Ayeez]
+- 作者：[god磊]
 - 邮箱：[[3406608593@qq.com](mailto:3406608593@qq.com)]
-- 博客：旧博客 [https://blog.ayeez.cn](https://blog.ayeez.cn) 或 新博客（本项目） [https://dev.ayeez.cn](https://dev.ayeez.cn)
-- GitHub Issues： [https://github.com/ayeez757/AyeezBlog/issues](https://github.com/ayeez757/AyeezBlog/issues)
+- 博客：旧博客 [https://blog.godlei.cn](https://blog.godlei.cn) 或 新博客（本项目） [https://dev.godlei.cn](https://dev.godlei.cn)
+- GitHub Issues： [https://github.com/godlei/GodLeiBlog/issues](https://github.com/godlei/GodLeiBlog/issues)
 - QQ交流群（不仅限于本博客，欢迎加入）：421300955
 
 ---

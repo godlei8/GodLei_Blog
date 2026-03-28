@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.godlei.blogserver.mapper.MediaFileMapper">
+
+    <insert id="insert" parameterType="cn.godlei.blogpojo.entity.MediaFile" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO blog_media_file (
+            biz_type,
+            storage_type,
+            original_name,
+            stored_name,
+            extension,
+            content_type,
+            file_size,
+            relative_path,
+            access_url
+        )
+        VALUES (
+            #{bizType},
+            #{storageType},
+            #{originalName},
+            #{storedName},
+            #{extension},
+            #{contentType},
+            #{fileSize},
+            #{relativePath},
+            #{accessUrl}
+        )
+    </insert>
+</mapper>

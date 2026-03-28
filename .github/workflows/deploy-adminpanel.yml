@@ -1,10 +1,10 @@
-name: 部署管理端
+name: Deploy Admin Panel
 
 on:
   push:
     branches: [ master ]
     paths:
-      - 'AyeezBlog-AdminPanel/**'
+      - '*Blog-AdminPanel/**'
       - '.github/workflows/deploy-adminpanel.yml'
   workflow_dispatch:
 
@@ -13,29 +13,32 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: 检出代码
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: 设置 Node.js 环境
+      - name: Detect admin directory
+        run: echo "ADMIN_DIR=$(find . -maxdepth 1 -type d -name '*Blog-AdminPanel' | sort -r | head -n 1 | sed 's#^./##')" >> $GITHUB_ENV
+
+      - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 18
-          cache: 'npm'
-          cache-dependency-path: AyeezBlog-AdminPanel/package-lock.json
+          cache: npm
+          cache-dependency-path: ${{ env.ADMIN_DIR }}/package-lock.json
 
-      - name: 安装依赖
-        working-directory: ./AyeezBlog-AdminPanel
+      - name: Install dependencies
+        working-directory: ./${{ env.ADMIN_DIR }}
         run: npm ci
 
-      - name: 构建项目
-        working-directory: ./AyeezBlog-AdminPanel
+      - name: Build project
+        working-directory: ./${{ env.ADMIN_DIR }}
         run: npm run build
 
-      - name: 部署到服务器（rsync 至 html/_data/admin）
+      - name: Deploy to server
         uses: burnett01/rsync-deployments@7.0.1
         with:
           switches: -avz --delete
-          path: AyeezBlog-AdminPanel/dist/
+          path: ${{ env.ADMIN_DIR }}/dist/
           remote_path: /var/lib/docker/volumes/html/_data/admin/
           remote_host: ${{ secrets.SERVER_HOST }}
           remote_user: ${{ secrets.SERVER_USER }}
