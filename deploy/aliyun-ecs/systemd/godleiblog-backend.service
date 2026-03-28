@@ -1,0 +1,15 @@
+[Unit]
+Description=GodLeiBlog Backend
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/godleiblog/backend
+EnvironmentFile=-/opt/godleiblog/backend/backend.env
+ExecStart=/usr/bin/env bash -lc 'exec java ${JAVA_OPTS:-"-Xms256m -Xmx512m -Dfile.encoding=UTF-8 -Duser.timezone=Asia/Shanghai"} -Dspring.profiles.active=${SPRING_PROFILES_ACTIVE:-local} -jar /opt/godleiblog/backend/app.jar --server.port=${SERVER_PORT:-8080}'
+SuccessExitStatus=143
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
