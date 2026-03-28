@@ -214,12 +214,39 @@ const createDefaultConfig = () => ({
     profileAvatar: ''
   },
   home: {
-    backgroundImage: ''
+    backgroundImage: '',
+    welcomePrefix: 'WELCOME TO',
+    welcomeHighlight: 'GODLEI BLOG',
+    noticeTitle: '公告',
+    introLines: [],
+    noticeLines: [],
+    socialLinks: []
   },
   about: {
     animeImages: []
   }
 })
+
+const normalizeText = (value, fallback = '') => {
+  const normalized = typeof value === 'string' ? value.trim() : ''
+  return normalized || fallback
+}
+
+const normalizeTextList = (list = []) => {
+  if (!Array.isArray(list)) return []
+  return list.map((item) => String(item || '').trim()).filter(Boolean)
+}
+
+const normalizeLinkList = (list = []) => {
+  if (!Array.isArray(list)) return []
+  return list
+    .map((item) => ({
+      name: normalizeText(item?.name),
+      icon: normalizeText(item?.icon),
+      url: normalizeText(item?.url)
+    }))
+    .filter((item) => item.name || item.url)
+}
 
 export default {
   name: 'SiteSettings',
@@ -289,12 +316,19 @@ export default {
         basic: {
           ...defaults.basic,
           ...(incoming.basic || {}),
+          siteName: normalizeText(incoming.basic?.siteName, defaults.basic.siteName),
           profileAvatar: normalizeMediaUrl(incoming.basic?.profileAvatar || defaults.basic.profileAvatar)
         },
         home: {
           ...defaults.home,
           ...(incoming.home || {}),
-          backgroundImage: normalizeMediaUrl(incoming.home?.backgroundImage || defaults.home.backgroundImage)
+          backgroundImage: normalizeMediaUrl(incoming.home?.backgroundImage || defaults.home.backgroundImage),
+          welcomePrefix: normalizeText(incoming.home?.welcomePrefix, defaults.home.welcomePrefix),
+          welcomeHighlight: normalizeText(incoming.home?.welcomeHighlight, defaults.home.welcomeHighlight),
+          noticeTitle: normalizeText(incoming.home?.noticeTitle, defaults.home.noticeTitle),
+          introLines: normalizeTextList(incoming.home?.introLines || defaults.home.introLines),
+          noticeLines: normalizeTextList(incoming.home?.noticeLines || defaults.home.noticeLines),
+          socialLinks: normalizeLinkList(incoming.home?.socialLinks || defaults.home.socialLinks)
         },
         about: {
           animeImages: normalizeStringList(incoming.about?.animeImages || defaults.about.animeImages)
@@ -306,8 +340,15 @@ export default {
     },
     buildPayload() {
       const payload = this.clone(this.form)
+      payload.basic.siteName = normalizeText(payload.basic.siteName, createDefaultConfig().basic.siteName)
       payload.basic.profileAvatar = normalizeMediaUrl(payload.basic.profileAvatar)
       payload.home.backgroundImage = normalizeMediaUrl(payload.home.backgroundImage)
+      payload.home.welcomePrefix = normalizeText(payload.home.welcomePrefix, createDefaultConfig().home.welcomePrefix)
+      payload.home.welcomeHighlight = normalizeText(payload.home.welcomeHighlight, createDefaultConfig().home.welcomeHighlight)
+      payload.home.noticeTitle = normalizeText(payload.home.noticeTitle, createDefaultConfig().home.noticeTitle)
+      payload.home.introLines = normalizeTextList(payload.home.introLines)
+      payload.home.noticeLines = normalizeTextList(payload.home.noticeLines)
+      payload.home.socialLinks = normalizeLinkList(payload.home.socialLinks)
       payload.about.animeImages = normalizeStringList(payload.about.animeImages)
       return payload
     },

@@ -39,6 +39,23 @@ const defaultConfig = {
 
 const clone = (value) => JSON.parse(JSON.stringify(value))
 
+function unwrapSiteConfigPayload(payload) {
+  if (!payload || typeof payload !== 'object') {
+    return {}
+  }
+
+  if (payload.basic || payload.home || payload.about) {
+    return payload
+  }
+
+  const nested = payload.data
+  if (nested && typeof nested === 'object' && (nested.basic || nested.home || nested.about)) {
+    return nested
+  }
+
+  return {}
+}
+
 const createLink = (item = {}) => ({
   name: item.name || '',
   icon: item.icon || '',
@@ -119,8 +136,8 @@ export async function loadSiteConfig(force = false) {
   }
 
   pendingConfigPromise = fetchSiteConfig()
-    .then((data) => {
-      cachedConfig = mergeSiteConfig(data)
+    .then((payload) => {
+      cachedConfig = mergeSiteConfig(unwrapSiteConfigPayload(payload))
       cacheUpdatedAt = Date.now()
       cachedVersionMarker = getSiteConfigVersionMarker() || versionMarker
       return cachedConfig
