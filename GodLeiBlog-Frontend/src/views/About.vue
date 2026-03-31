@@ -153,8 +153,9 @@
 
         <div v-if="hasAnimeImages" ref="animeGrid" class="anime-grid" aria-label="追番卡片列表">
           <div
-            v-for="(image, index) in animeDisplayedImages"
+            v-for="(image, index) in animeImages"
             :key="`${image}-${index}`"
+            v-show="isAnimeCardVisible(index)"
             class="anime-card"
             :title="`番剧 ${index + 1}`"
           >
@@ -162,7 +163,7 @@
               :src="resolveAnimeImage(image, index)"
               :alt="`番剧 ${index + 1}`"
               class="anime-card-img"
-              loading="lazy"
+              :loading="getAnimeImageLoading(index)"
               @error="handleImageError($event, animeFallback(index))"
             />
           </div>
@@ -267,11 +268,6 @@ export default {
     },
     animeImages() {
       return Array.isArray(this.siteConfig.about?.animeImages) ? this.siteConfig.about.animeImages : []
-    },
-    animeDisplayedImages() {
-      if (!this.animeCollapsed) return this.animeImages
-      const count = this.animeVisibleCount || this.animeRowsToShow
-      return this.animeImages.slice(0, count)
     },
     hasAnimeImages() {
       return this.animeImages.length > 0
@@ -441,6 +437,24 @@ export default {
 
       columnCount = Math.max(1, columnCount || 1)
       this.animeVisibleCount = Math.min(columnCount * this.animeRowsToShow, this.animeImages.length)
+    },
+    getDefaultAnimeColumnCount() {
+      if (typeof window === 'undefined') return 5
+      if (window.innerWidth <= 520) return 2
+      if (window.innerWidth <= 760) return 3
+      if (window.innerWidth <= 980) return 4
+      return 5
+    },
+    getCollapsedAnimeLimit() {
+      if (this.animeVisibleCount > 0) return this.animeVisibleCount
+      return Math.min(this.getDefaultAnimeColumnCount() * this.animeRowsToShow, this.animeImages.length)
+    },
+    isAnimeCardVisible(index) {
+      if (!this.animeCollapsed) return true
+      return index < this.getCollapsedAnimeLimit()
+    },
+    getAnimeImageLoading(index) {
+      return this.isAnimeCardVisible(index) ? 'eager' : 'lazy'
     },
     toggleAnimeCollapse() {
       this.animeCollapsed = !this.animeCollapsed
