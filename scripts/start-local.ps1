@@ -2,6 +2,7 @@ $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $false
 
 $root = Split-Path -Parent $PSScriptRoot
+. (Join-Path $PSScriptRoot 'import-local-env.ps1')
 $backendDir = Get-ChildItem -Path $root -Directory -Filter '*Blog-Backend' | Sort-Object Name -Descending | Select-Object -First 1 -ExpandProperty FullName
 $frontendDir = Get-ChildItem -Path $root -Directory -Filter '*Blog-Frontend' | Sort-Object Name -Descending | Select-Object -First 1 -ExpandProperty FullName
 $adminDir = Get-ChildItem -Path $root -Directory -Filter '*Blog-AdminPanel' | Sort-Object Name -Descending | Select-Object -First 1 -ExpandProperty FullName
@@ -177,6 +178,7 @@ if (-not (Test-PortListening 8080)) {
   Start-Process -FilePath $javaExe `
     -ArgumentList '-jar', $backendJar, '--spring.profiles.active=local' `
     -WorkingDirectory (Join-Path $backendDir 'blog-server') `
+    -WindowStyle Hidden `
     -RedirectStandardOutput (Join-Path $logDir 'backend-dev.out.log') `
     -RedirectStandardError (Join-Path $logDir 'backend-dev.err.log') | Out-Null
 }
@@ -185,6 +187,7 @@ if (-not (Test-PortListening 5173)) {
   Start-Process -FilePath $npmExe `
     -ArgumentList 'run', 'dev', '--', '--host', '0.0.0.0', '--port', '5173' `
     -WorkingDirectory $frontendDir `
+    -WindowStyle Hidden `
     -RedirectStandardOutput (Join-Path $logDir 'frontend-dev.out.log') `
     -RedirectStandardError (Join-Path $logDir 'frontend-dev.err.log') | Out-Null
 }
@@ -193,6 +196,7 @@ if (-not (Test-PortListening 5174)) {
   Start-Process -FilePath $npmExe `
     -ArgumentList 'run', 'dev', '--', '--host', '0.0.0.0', '--port', '5174' `
     -WorkingDirectory $adminDir `
+    -WindowStyle Hidden `
     -RedirectStandardOutput (Join-Path $logDir 'admin-dev.out.log') `
     -RedirectStandardError (Join-Path $logDir 'admin-dev.err.log') | Out-Null
 }

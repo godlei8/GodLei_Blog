@@ -16,20 +16,12 @@ const defaultConfig = {
     welcomePrefix: 'WELCOME TO',
     welcomeHighlight: 'GODLEI BLOG',
     noticeTitle: '公告',
-    introLines: [
-      '这里是 GodLei 的博客。',
-      '很高兴与你相遇。',
-      '这里会分享技术、生活和一些仍在折腾中的想法。'
-    ],
-    noticeLines: [
-      '新站目前正在持续重构和完善中。',
-      '如果你遇到图片缺失或排版异常，我会继续补齐。',
-      '这里会记录开发、折腾和日常里值得留下的小事。'
-    ],
+    introLines: ['这里是 GodLei 的博客。', '很高兴与你相遇。', '这里会分享技术、生活和一些仍在折腾中的想法。'],
+    noticeLines: ['新站目前正在持续重构和完善中。', '如果你遇到图片缺失或排版异常，我会继续补齐。', '这里会记录开发、折腾和日常里值得留下的小事。'],
     socialLinks: [
-      { name: 'GitHub', icon: 'fab fa-github', url: 'https://github.com/godlei/' },
-      { name: 'Bilibili', icon: 'fab fa-bilibili', url: 'https://space.bilibili.com/499974079' },
-      { name: 'Email', icon: 'fas fa-envelope', url: 'mailto:godlei@gmail.com' }
+      { name: 'GitHub', icon: 'fab fa-github', url: 'https://github.com/godlei8/GodLei_Blog/tree/Releases' },
+      { name: 'Bilibili', icon: 'fab fa-bilibili', url: 'https://space.bilibili.com/274629100' },
+      { name: 'DouYin', icon: 'fab fa-douyin', url: 'https://www.douyin.com/user/MS4wLjABAAAAwQfPO4nOMC2TX_WkSZ4Z3kVybHaGXdOFRhWFfKbM9oU?from_tab_name=main' }
     ]
   },
   about: {
@@ -37,7 +29,7 @@ const defaultConfig = {
   }
 }
 
-const clone = (value) => JSON.parse(JSON.stringify(value))
+const clone = value => JSON.parse(JSON.stringify(value))
 
 function unwrapSiteConfigPayload(payload) {
   if (!payload || typeof payload !== 'object') {
@@ -73,16 +65,16 @@ function normalizeMediaValue(value, fallback = '') {
 
 function normalizeStringList(list, fallback = []) {
   const source = Array.isArray(list) ? list : fallback
-  return source.map((item) => String(item || '').trim()).filter(Boolean)
+  return source.map(item => String(item || '').trim()).filter(Boolean)
 }
 
 function normalizeMediaList(list, fallback = []) {
-  return normalizeStringList(list, fallback).map((item) => normalizeMediaUrl(item))
+  return normalizeStringList(list, fallback).map(item => normalizeMediaUrl(item))
 }
 
 function normalizeLinkList(list, fallback = []) {
   const source = Array.isArray(list) ? list : fallback
-  return source.map((item) => createLink(item)).filter((item) => item.name || item.url)
+  return source.map(item => createLink(item)).filter(item => item.name || item.url)
 }
 
 function getSiteConfigVersionMarker() {
@@ -124,7 +116,7 @@ export function getDefaultSiteConfig() {
 
 export async function loadSiteConfig(force = false) {
   const versionMarker = getSiteConfigVersionMarker()
-  const cacheExpired = !cacheUpdatedAt || (Date.now() - cacheUpdatedAt) > SITE_CONFIG_CACHE_TTL
+  const cacheExpired = !cacheUpdatedAt || Date.now() - cacheUpdatedAt > SITE_CONFIG_CACHE_TTL
   const versionChanged = cachedVersionMarker !== versionMarker
 
   if (!force && cachedConfig && !cacheExpired && !versionChanged) {
@@ -132,17 +124,17 @@ export async function loadSiteConfig(force = false) {
   }
 
   if (pendingConfigPromise) {
-    return pendingConfigPromise.then((value) => clone(value))
+    return pendingConfigPromise.then(value => clone(value))
   }
 
   pendingConfigPromise = fetchSiteConfig()
-    .then((payload) => {
+    .then(payload => {
       cachedConfig = mergeSiteConfig(unwrapSiteConfigPayload(payload))
       cacheUpdatedAt = Date.now()
       cachedVersionMarker = getSiteConfigVersionMarker() || versionMarker
       return cachedConfig
     })
-    .catch((error) => {
+    .catch(error => {
       console.error('加载站点配置失败，回退到默认配置', error)
       cachedConfig = mergeSiteConfig({})
       cacheUpdatedAt = Date.now()
