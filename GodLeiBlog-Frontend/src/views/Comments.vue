@@ -7,8 +7,72 @@
       </div>
 
       <p class="comments-subtitle">
-        这里是当前页面的留言区，欢迎留下你的想法。
+        这里会把 <span class="highlight">全站所有评论</span>汇总到一起。
       </p>
+
+      <div class="comment-card comment-card--all">
+        <div class="card-header">
+          <h2 class="card-title">全站评论汇总</h2>
+          <div class="card-actions">
+            <button class="seg-btn" type="button" :class="{ 'seg-btn--active': viewMode === 'recent' }"
+              @click="viewMode = 'recent'">
+              最新
+            </button>
+            <button class="seg-btn" type="button" :class="{ 'seg-btn--active': viewMode === 'tree' }"
+              @click="viewMode = 'tree'">
+              按页面/层级
+            </button>
+            <button class="refresh-btn" type="button" @click="loadAllSiteComments" :disabled="loadingAll">
+              {{ loadingAll ? `加载中 ${progressText}` : '刷新' }}
+            </button>
+          </div>
+        </div>
+
+        <div class="recent-meta">
+          <span class="meta-pill">页面数：{{ siteUrls.length }}</span>
+          <span class="meta-pill">评论总数：{{ flatComments.length }}</span>
+          <span v-if="loadError" class="meta-error">加载失败：{{ loadError }}</span>
+          <span v-else-if="loadingAll" class="meta-muted">正在拉取全站评论，数量多时会稍慢…</span>
+        </div>
+
+        <div v-if="!loadingAll && !loadError && !flatComments.length" class="empty-state">
+          暂无评论数据。
+        </div>
+
+        <div v-if="viewMode === 'recent' && flatComments.length" class="recent-list">
+          <a v-for="item in recentComments" :key="item.id" class="recent-item" :href="item._href" target="_blank"
+            rel="noopener" :title="item.url || ''">
+            <img class="recent-avatar" :src="item.avatar || fallbackAvatar(item)" alt="" />
+            <div class="recent-body">
+              <div class="recent-top">
+                <span class="recent-nick">{{ item.nick || '匿名' }}</span>
+                <span class="recent-time">{{ formatTime(item.created, item.relativeTime) }}</span>
+              </div>
+              <div class="recent-url">
+                {{ displayPath(item.url) }}
+                <span v-if="item._replyToNick" class="reply-tag">回复 @{{ item._replyToNick }}</span>
+              </div>
+              <div class="recent-text">{{ item.commentText || '' }}</div>
+            </div>
+          </a>
+        </div>
+
+        <div v-if="viewMode === 'tree' && siteGroups.length" class="tree-groups">
+          <div v-for="g in siteGroups" :key="g.url" class="tree-group">
+            <div class="group-head">
+              <a class="group-link" :href="toHref(g.url)" target="_blank" rel="noopener">
+                {{ displayPath(g.url) }}
+              </a>
+              <span class="group-count">{{ g.count }} 条</span>
+            </div>
+            <div v-if="!g.items.length" class="group-empty">该页面暂无评论</div>
+            <div v-else class="tree-list">
+              <CommentNode v-for="node in g.items" :key="node.id" :node="node" :depth="0" :to-href="toHref"
+                :format-time="formatTime" :display-path="displayPath" :fallback-avatar="fallbackAvatar" />
+            </div>
+          </div>
+        </div>
+      </div>
 
       <div class="comment-card">
         <div class="card-header">
@@ -23,486 +87,360 @@
 </template>
 
 <script>
-import { getTwikooEnvId, loadTwikoo, normalizeTwikooError } from '@/utils/twikoo'
+import { fetchPosts } from '@/api';
+import { loadTwikoo, getTwikooEnvId } from '@/utils/twikoo';
+
+const CommentNode = {
+  name: 'CommentNode',
+  props: {
+    node: { type: Object, required: true },
+    depth: { type: Number, required: true },
+    toHref: { type: Function, required: true },
+    formatTime: { type: Function, required: true },
+    displayPath: { type: Function, required: true },
+    fallbackAvatar: { type: Function, required: true }
+  },
+  template: `
+    <div class="node" :style="{ '--depth': depth }">
+      <div class="node-row">
+        <img class="node-avatar" :src="node.avatar || fallbackAvatar(node)" alt="" />
+        <div class="node-body">
+          <div class="node-top">
+            <span class="node-nick">{{ node.nick || '匿名' }}</span>
+            <span class="node-time">{{ formatTime(node.created, node.relativeTime) }}</span>
+          </div>
+          <div class="node-meta">
+            <a class="node-link" :href="toHref(node.url)" target="_blank" rel="noopener">{{ displayPath(node.url) }}</a>
+          </div>
+          <div class="node-text">{{ node.commentText || '' }}</div>
+        </div>
+      </div>
+      <div v-if="node.replies && node.replies.length" class="node-children">
+        <CommentNode
+          v-for="c in node.replies"
+          :key="c.id"
+          :node="c"
+          :depth="depth + 1"
+          :to-href="toHref"
+          :format-time="formatTime"
+          :display-path="displayPath"
+          :fallback-avatar="fallbackAvatar"
+        />
+      </div>
+    </div>
+  `
+};
 
 export default {
   name: 'Comments',
+  components: { CommentNode },
   data() {
     return {
-      twikooEmbedError: ''
-    }
+      twikooEmbedError: '',
+
+      viewMode: 'recent', // recent | tree
+
+      loadingAll: false,
+      loadError: '',
+      partialErrors: [],
+      loadedUrls: 0,
+      totalUrls: 0,
+
+      _postsCache: [],
+      siteCommentMap: new Map()
+    };
   },
   computed: {
+    /** 生产直连云函数；localhost 走 Vite 代理 /twikoo-proxy，避免 CORS */
     twikooEnvId() {
-      return getTwikooEnvId()
+      return getTwikooEnvId();
+    },
+    progressText() {
+      if (!this.totalUrls) return '';
+      return `${this.loadedUrls}/${this.totalUrls}`;
+    },
+    siteUrls() {
+      const urls = new Set(['/comments', '/link']);
+      (this._postsCache || []).forEach((p) => {
+        const id = p && (p.id ?? p.postId);
+        if (id || id === 0) urls.add(`/posts/${id}`);
+      });
+      return Array.from(urls);
+    },
+    siteGroups() {
+      const arr = [];
+      for (const url of this.siteUrls) {
+        const g = this.siteCommentMap.get(url);
+        if (g) arr.push(g);
+        else arr.push({ url, items: [], count: 0 });
+      }
+      arr.sort((a, b) => (b.count || 0) - (a.count || 0));
+      return arr;
+    },
+    flatComments() {
+      const out = [];
+      const walk = (node, url, parentNick) => {
+        if (!node) return;
+        const copy = { ...node, url: node.url || url };
+        if (parentNick) copy._replyToNick = parentNick;
+        copy._href = this.toHref(copy.url);
+        out.push(copy);
+        const reps = Array.isArray(node.replies) ? node.replies : [];
+        reps.forEach((r) => walk(r, url, node.nick || '匿名'));
+      };
+      this.siteGroups.forEach((g) => {
+        (g.items || []).forEach((n) => walk(n, g.url, ''));
+      });
+      return out;
+    },
+    recentComments() {
+      return this.flatComments
+        .slice()
+        .sort((a, b) => (Number(b.created) || 0) - (Number(a.created) || 0));
     }
   },
   mounted() {
-    this.initTwikooEmbed()
+    this.initTwikooEmbed();
+    this.loadAllSiteComments();
   },
   methods: {
     async initTwikooEmbed() {
-      this.twikooEmbedError = ''
-      await this.$nextTick()
-      const el = this.$refs.twikooEmbed
+      this.twikooEmbedError = '';
+      await this.$nextTick();
+      const el = this.$refs.twikooEmbed;
       if (!el) {
-        this.twikooEmbedError = '留言区容器未就绪，请刷新重试'
-        return
+        this.twikooEmbedError = '留言区容器未就绪，请刷新重试';
+        return;
       }
       try {
-        const twikoo = await loadTwikoo()
+        const tw = await loadTwikoo();
         await Promise.resolve(
-          twikoo.init({
+          tw.init({
             envId: this.twikooEnvId,
             el,
             path: '/comments'
           })
-        )
-      } catch (error) {
-        const err = normalizeTwikooError(error, this.twikooEnvId)
-        const msg = err && err.message ? err.message : String(err)
-        console.error('Twikoo 留言区初始化失败', err)
-        this.twikooEmbedError = msg
+        );
+      } catch (e) {
+        const msg = e && e.message ? e.message : String(e);
+        console.error('Twikoo 留言区初始化失败', e);
+        this.twikooEmbedError = `Twikoo 加载失败：${msg}`;
       }
-    }
-  }
-}
-</script>
+    },
+    // 页面展示/跳转用的路径映射（不等同于 Twikoo 存储评论的 url key）
+    mapCommentPathToPagePath(raw) {
+      const s = (raw || '').toString();
+      if (!s) return s;
+      // 友链页：历史评论聚合在 /link，但实际页面是 /links
+      if (s === '/link') return '/links';
+      return s;
+    },
+    // Twikoo 拉取评论时，尝试的 url key 集合（兼容相对路径 / 完整 URL / 历史映射）
+    twikooKeysForUrl(rawUrl) {
+      const origin = (window && window.location && window.location.origin) ? window.location.origin : '';
+      const raw = (rawUrl || '').toString();
+      const pagePath = this.mapCommentPathToPagePath(raw);
 
-<style scoped>
-.comments {
-  width: 100%;
-  box-sizing: border-box;
-  color: white;
-  background: rgba(0, 0, 0, 0.7);
-  display: flex;
-  justify-content: center;
-  min-height: calc(100vh - 68px);
-  padding: 20px;
-}
+      const candidates = [];
+      if (raw) candidates.push(raw);
+      if (origin && raw && !/^https?:\/\//i.test(raw)) candidates.push(`${origin}${raw}`);
+      if (pagePath && pagePath !== raw) candidates.push(pagePath);
+      if (origin && pagePath && pagePath !== raw && !/^https?:\/\//i.test(pagePath)) candidates.push(`${origin}${pagePath}`);
 
-.comments-inner {
-  width: 100%;
-  max-width: 900px;
-}
+      return Array.from(new Set(candidates.filter(Boolean)));
+    },
+    htmlToText(html) {
+      const s = (html || '').toString();
+      if (!s) return '';
+      if (typeof document === 'undefined') return s;
+      const el = document.createElement('div');
+      el.innerHTML = s;
+      return (el.innerText || el.textContent || '').trim();
+    },
+    normalizeCommentNode(node) {
+      if (!node || typeof node !== 'object') return node;
+      if (!node.commentText) {
+        if (typeof node.comment === 'string') node.commentText = this.htmlToText(node.comment);
+        else if (typeof node.text === 'string') node.commentText = node.text;
+      }
+      const reps = Array.isArray(node.replies) ? node.replies : [];
+      if (reps.length) node.replies = reps.map((r) => this.normalizeCommentNode(r));
+      return node;
+    },
+    toHref(raw) {
+      const origin = (window && window.location && window.location.origin) ? window.location.origin : '';
+      const s = this.mapCommentPathToPagePath((raw || '').toString());
+      if (!s) return origin || '#';
+      if (/^https?:\/\//i.test(s)) return s;
+      return `${origin}${s}`;
+    },
+    async loadAllSiteComments() {
+      this.loadingAll = true;
+      this.loadError = '';
+      this.partialErrors = [];
+      this.loadedUrls = 0;
+      try {
+        const resp = await fetchPosts(1, 9999, 'update_time', 'desc');
+        const rows = resp && resp.data && Array.isArray(resp.data.rows) ? resp.data.rows : [];
+        this._postsCache = rows;
 
-.comments-header {
-  font-family: 'Bebas Neue', Arial, sans-serif;
-  margin-bottom: 8px;
-}
+        const urls = this.siteUrls;
+        this.totalUrls = urls.length;
 
-.comments-tagline {
-  font-size: 20px;
-  letter-spacing: 4px;
-  color: #cccccc;
-}
-
-.comments-title-gradient {
-  font-size: 46px;
-  letter-spacing: 6px;
-  background-image: var(--theme-accent-title-gradient);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-
-.comments-subtitle {
-  margin-bottom: 18px;
-  color: #cccccc;
-  line-height: 1.7;
-}
-
-.sub-link {
-  color: var(--theme-accent-text);
-  text-decoration: none;
-}
-
-.sub-link:hover {
-  text-decoration: underline;
-}
-
-.comment-card {
-  margin-top: 20px;
-  border-radius: 12px;
-  padding: 18px;
-  width: 100%;
-  background: rgba(0, 0, 0, 0.8);
-  border: 1px solid rgba(255, 255, 255, 0.35);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
-}
-
-.card-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.card-title {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 700;
-}
-
-.meta-muted {
-  font-size: 12px;
-  color: #c8c8c8;
-}
-
-#tcomment {
-  color: white;
-  min-height: 120px;
-}
-
-.twikoo-embed-error {
-  margin-top: 10px;
-  font-size: 13px;
-  color: #ffb4b4;
-  line-height: 1.5;
-}
-
-.twikoo-wrap :deep(.tk-comments) {
-  color: rgba(255, 255, 255, 0.88);
-}
-
-.twikoo-wrap :deep(.tk-submit) {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  border-radius: 12px;
-  padding: 14px;
-}
-
-.twikoo-wrap :deep(.tk-submit .tk-row) {
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.twikoo-wrap :deep(.tk-preview) {
-  overflow-wrap: anywhere;
-  word-break: break-word;
-}
-
-.twikoo-wrap :deep(.tk-avatar),
-.twikoo-wrap :deep(.tk-avatar img) {
-  border-radius: 50%;
-}
-
-.twikoo-wrap :deep(textarea),
-.twikoo-wrap :deep(input),
-.twikoo-wrap :deep(.tk-input) {
-  color: #fff;
-  background: rgba(0, 0, 0, 0.35);
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  border-radius: 10px;
-  outline: none;
-}
-
-.twikoo-wrap :deep(textarea:focus),
-.twikoo-wrap :deep(input:focus),
-.twikoo-wrap :deep(.tk-input:focus) {
-  border: 1px solid var(--theme-accent-border-strong);
-  box-shadow: 0 0 0 3px var(--theme-accent-glow-soft);
-}
-
-.twikoo-wrap :deep(.tk-row.actions),
-.twikoo-wrap :deep(.tk-row.actions > *) {
-  color: rgba(255, 255, 255, 0.85);
-}
-
-.twikoo-wrap :deep(.tk-send),
-.twikoo-wrap :deep(button),
-.twikoo-wrap :deep(.tk-button) {
-  border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  background: var(--theme-accent-panel-button);
-  color: #fff;
-  transition: transform 0.15s ease, border 0.15s ease, box-shadow 0.15s ease;
-}
-
-.twikoo-wrap :deep(.tk-send:hover),
-.twikoo-wrap :deep(button:hover),
-.twikoo-wrap :deep(.tk-button:hover) {
-  transform: translateY(-1px);
-  border: 1px solid var(--theme-accent-border);
-  box-shadow: 0 6px 14px var(--theme-accent-shadow);
-}
-
-.twikoo-wrap :deep(.tk-comment) {
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  background: rgba(255, 255, 255, 0.03);
-  padding: 12px;
-}
-
-.twikoo-wrap :deep(.tk-content) {
-  color: rgba(255, 255, 255, 0.86);
-}
-
-.twikoo-wrap :deep(.tk-nick) {
-  color: #fff;
-  font-weight: 700;
-}
-
-.twikoo-wrap :deep(.tk-time) {
-  color: rgba(255, 255, 255, 0.65);
-  font-size: 12px;
-}
-
-.twikoo-wrap :deep(.tk-action) {
-  color: var(--theme-accent-text);
-}
-
-.twikoo-wrap :deep(.tk-action:hover) {
-  text-decoration: underline;
-}
-
-@media (max-width: 768px) {
-  .comments {
-    padding: 16px;
-  }
-
-  .comments-title-gradient {
-    font-size: 38px;
-  }
-
-  .comment-card {
-    padding: 16px 14px;
-  }
-}
-
-@media (max-width: 520px) {
-  .comments-tagline {
-    font-size: 18px;
-    letter-spacing: 3px;
-  }
-
-  .comments-title-gradient {
-    font-size: 34px;
-    letter-spacing: 4px;
-  }
-
-  .comments-subtitle {
-    margin-bottom: 14px;
-    font-size: 13px;
-  }
-
-  .card-header {
-    align-items: flex-start;
-  }
-
-  .twikoo-wrap :deep(.tk-submit) {
-    padding: 12px;
-  }
-
-  .twikoo-wrap :deep(.tk-submit .tk-row .tk-col),
-  .twikoo-wrap :deep(.tk-submit .tk-row .tk-col-lg),
-  .twikoo-wrap :deep(.tk-submit .tk-row .tk-col-md),
-  .twikoo-wrap :deep(.tk-submit .tk-row .tk-col-sm),
-  .twikoo-wrap :deep(.tk-submit .tk-row .tk-col-xs) {
-    flex: 1 1 100%;
-    width: 100%;
-    max-width: 100%;
-  }
-
-  .twikoo-wrap :deep(.tk-submit .tk-row .tk-col + .tk-col) {
-    margin-left: 0;
-  }
-
-  .twikoo-wrap :deep(.tk-send),
-  .twikoo-wrap :deep(.tk-button) {
-    width: 100%;
-  }
-}
-
-@media (max-width: 360px) {
-  .comments {
-    padding: 12px;
-  }
-
-  .comment-card {
-    padding: 14px 12px;
-  }
-
-  .comments-title-gradient {
-    font-size: 30px;
-    letter-spacing: 3px;
-  }
-}
-</style>
-              this.partialErrors.push({ url, message: msg })
-              nextMap.set(url, { url, items: [], count: 0, _error: msg })
+        const nextMap = new Map();
+        const concurrency = 3;
+        let idx = 0;
+        const worker = async () => {
+          while (idx < urls.length) {
+            const url = urls[idx++];
+            try {
+              const g = await this.loadAllForUrl(url);
+              nextMap.set(url, g);
+            } catch (e) {
+              const msg = e && e.message ? e.message : '未知错误';
+              this.partialErrors.push({ url, message: msg });
+              nextMap.set(url, { url, items: [], count: 0, _error: msg });
             }
-            this.loadedUrls += 1
+            this.loadedUrls += 1;
           }
-        }
-        const workers = Array.from({ length: Math.min(concurrency, urls.length) }, () =>
-          worker()
-        )
-        await Promise.all(workers)
+        };
+        const workers = Array.from({ length: Math.min(concurrency, urls.length) }, () => worker());
+        await Promise.all(workers);
 
-        this.siteCommentMap = nextMap
+        this.siteCommentMap = nextMap;
         if (this.partialErrors.length) {
-          const sample = this.partialErrors
-            .slice(0, 3)
-            .map((x) => `${x.url}（${x.message}）`)
-            .join('；')
-          this.loadError = `部分页面抓取失败：${this.partialErrors.length}/${this.totalUrls}${sample ? `，例如：${sample}` : ''}`
+          const sample = this.partialErrors.slice(0, 3).map((x) => `${x.url}（${x.message}）`).join('；');
+          this.loadError = `部分页面抓取失败：${this.partialErrors.length}/${this.totalUrls}${sample ? `，例如：${sample}` : ''}`;
         }
       } catch (e) {
-        this.loadError = e && e.message ? e.message : '未知错误'
-        this.siteCommentMap = new Map()
+        this.loadError = e && e.message ? e.message : '未知错误';
+        this.siteCommentMap = new Map();
       } finally {
-        this.loadingAll = false
+        this.loadingAll = false;
       }
     },
-
     async loadAllForUrl(url) {
       const fetchAllByKey = async (twikooUrlKey) => {
-        const allTop = []
-        let before = undefined
-        let more = true
-        let guard = 0
-        let totalCount = 0
+        const allTop = [];
+        let before = undefined;
+        let more = true;
+        let guard = 0;
+        let totalCount = 0;
 
         while (more && guard < 10000) {
-          guard += 1
-          const res = await this.twikooCommentGet({ url: twikooUrlKey, before })
-          const data = Array.isArray(res && res.data) ? res.data : []
-          more = !!(res && res.more)
-          totalCount = typeof res.count === 'number' ? res.count : totalCount
-          allTop.push(...data)
+          guard += 1;
+          const res = await this.twikooCommentGet({ url: twikooUrlKey, before });
+          const data = Array.isArray(res && res.data) ? res.data : [];
+          more = !!(res && res.more);
+          totalCount = typeof res.count === 'number' ? res.count : totalCount;
+          allTop.push(...data);
 
-          if (!more) break
+          if (!more) break;
 
-          const createdList = []
+          const createdList = [];
           const collectCreated = (nodes) => {
-            ;(nodes || []).forEach((n) => {
+            (nodes || []).forEach((n) => {
               if (n && (typeof n.created === 'number' || typeof n.created === 'string')) {
-                const t = Number(n.created)
-                if (!Number.isNaN(t) && t) createdList.push(t)
+                const t = Number(n.created);
+                if (!Number.isNaN(t) && t) createdList.push(t);
               }
-              if (n && Array.isArray(n.replies) && n.replies.length) collectCreated(n.replies)
-            })
-          }
-          collectCreated(data)
-          const minCreated = createdList.length ? Math.min(...createdList) : 0
+              if (n && Array.isArray(n.replies) && n.replies.length) collectCreated(n.replies);
+            });
+          };
+          collectCreated(data);
+          const minCreated = createdList.length ? Math.min(...createdList) : 0;
           if (!minCreated || (before && minCreated >= before)) {
-            more = false
-            break
+            more = false;
+            break;
           }
-          before = minCreated
+          before = minCreated;
         }
 
-        return { items: allTop, count: totalCount }
-      }
+        return { items: allTop, count: totalCount };
+      };
 
-      const keys = this.twikooKeysForUrl(url)
+      const keys = this.twikooKeysForUrl(url);
 
-      const mergedTop = []
-      let mergedCount = 0
+      // 兼容不同部署/迁移形态：Twikoo 的 url key 可能是相对路径，也可能是完整 URL
+      const mergedTop = [];
+      let mergedCount = 0;
       for (const k of keys) {
-        const { items, count } = await fetchAllByKey(k)
-        mergedTop.push(...(items || []))
-        if (typeof count === 'number' && count > mergedCount) mergedCount = count
+        const { items, count } = await fetchAllByKey(k);
+        mergedTop.push(...(items || []));
+        if (typeof count === 'number' && count > mergedCount) mergedCount = count;
       }
 
-      const seen = new Set()
+      const seen = new Set();
       const dedupTree = (nodes) => {
-        const out = []
-        ;(nodes || []).forEach((n) => {
-          if (!n || !n.id) return
-          if (seen.has(n.id)) return
-          seen.add(n.id)
-          const replies = Array.isArray(n.replies) ? dedupTree(n.replies) : []
-          out.push(this.normalizeCommentNode({ ...n, url, replies }))
-        })
-        return out
-      }
-      const items = dedupTree(mergedTop)
-      const count = mergedCount || this.countTree(items)
-      return { url, items, count }
+        const out = [];
+        (nodes || []).forEach((n) => {
+          if (!n || !n.id) return;
+          if (seen.has(n.id)) return;
+          seen.add(n.id);
+          const replies = Array.isArray(n.replies) ? dedupTree(n.replies) : [];
+          out.push(this.normalizeCommentNode({ ...n, url, replies }));
+        });
+        return out;
+      };
+      const items = dedupTree(mergedTop);
+      const count = mergedCount || this.countTree(items);
+      return { url, items, count };
     },
-
     countTree(nodes) {
-      let c = 0
+      let c = 0;
       const walk = (arr) => {
-        ;(arr || []).forEach((n) => {
-          c += 1
-          if (n && Array.isArray(n.replies) && n.replies.length) walk(n.replies)
-        })
-      }
-      walk(nodes)
-      return c
+        (arr || []).forEach((n) => {
+          c += 1;
+          if (n && Array.isArray(n.replies) && n.replies.length) walk(n.replies);
+        });
+      };
+      walk(nodes);
+      return c;
     },
-
-    async twikooCommentGet({ url, before }, retryCount = 3) {
-      const payload = { event: 'COMMENT_GET', url }
-      if (before) payload.before = before
-
-      for (let attempt = 0; attempt < retryCount; attempt++) {
+    async twikooCommentGet({ url, before }) {
+      const payload = { event: 'COMMENT_GET', url };
+      if (before) payload.before = before;
+      const r = await fetch(this.twikooEnvId, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (!r.ok) {
+        let detail = '';
         try {
-          const r = await fetch(this.twikooEnvId, {
-            method: 'POST',
-            headers: { 'content-type': 'application/json' },
-            body: JSON.stringify(payload)
-          })
-          if (!r.ok) {
-            if (r.status === 429 && attempt < retryCount - 1) {
-              const waitTime = Math.pow(2, attempt) * 1000
-              await this.delay(waitTime)
-              continue
-            }
-            let detail = ''
-            try {
-              detail = await r.text()
-            } catch (_) {
-              // ignore
-            }
-            throw new Error(`Twikoo 请求失败：${r.status}${detail ? ` ${detail}` : ''}`)
-          }
-          return await r.json()
-        } catch (e) {
-          if (
-            attempt < retryCount - 1 &&
-            (e.message?.includes('fetch') || e.message?.includes('network'))
-          ) {
-            const waitTime = Math.pow(2, attempt) * 1000
-            await this.delay(waitTime)
-            continue
-          }
-          throw e
+          detail = await r.text();
+        } catch (_) {
+          // ignore
         }
+        throw new Error(`Twikoo 请求失败：${r.status}${detail ? ` ${detail}` : ''}`);
       }
-      throw new Error('Twikoo 请求失败：超过最大重试次数')
+      return await r.json();
     },
-
     displayPath(u) {
-      const s = this.mapCommentPathToPagePath((u || '').toString())
-      if (!s) return '未知页面'
+      const s = this.mapCommentPathToPagePath((u || '').toString());
+      if (!s) return '未知页面';
       try {
-        const parsed = new URL(s, window.location.origin)
-        return parsed.pathname || s
+        const parsed = new URL(s, window.location.origin);
+        return parsed.pathname || s;
       } catch (_) {
-        return s
+        return s;
       }
     },
-
     formatTime(created, relativeTime) {
-      if (relativeTime) return relativeTime
-      const ts = typeof created === 'number' ? created : Number(created)
-      if (!ts || Number.isNaN(ts)) return ''
-      const d = new Date(ts)
-      if (Number.isNaN(d.getTime())) return ''
-      return d.toLocaleString('zh-CN', { hour12: false })
+      if (relativeTime) return relativeTime;
+      const ts = typeof created === 'number' ? created : Number(created);
+      if (!ts || Number.isNaN(ts)) return '';
+      const d = new Date(ts);
+      if (Number.isNaN(d.getTime())) return '';
+      return d.toLocaleString('zh-CN', { hour12: false });
     },
-
     fallbackAvatar(item) {
-      const md5 = item && item.mailMd5 ? String(item.mailMd5) : ''
-      if (!md5) return 'https://www.weavatar.com/avatar/?d=mp&s=96'
-      return `https://www.weavatar.com/avatar/${md5}?d=mp&s=96`
+      const md5 = item && item.mailMd5 ? String(item.mailMd5) : '';
+      if (!md5) return 'https://www.weavatar.com/avatar/?d=mp&s=96';
+      return `https://www.weavatar.com/avatar/${md5}?d=mp&s=96`;
     }
   }
+};
 </script>
 
 <style scoped>
@@ -549,7 +487,7 @@ export default {
 }
 
 .sub-link {
-  color: var(--theme-accent-text);
+  color: #7af58f;
   text-decoration: none;
 }
 
@@ -558,7 +496,7 @@ export default {
 }
 
 .highlight {
-  color: var(--theme-accent-text);
+  color: #7af58f;
   font-weight: 600;
 }
 
@@ -576,8 +514,8 @@ export default {
   max-width: 900px;
   margin-left: auto;
   margin-right: auto;
-  background: var(--theme-accent-panel);
-  border: 1px solid var(--theme-accent-border-soft);
+  background: linear-gradient(135deg, rgba(108, 171, 106, 0.12), rgba(0, 0, 0, 0.82));
+  border: 1px solid rgba(255, 255, 255, 0.28);
 }
 
 .card-header {
@@ -600,7 +538,6 @@ export default {
   margin: 0;
   font-size: 18px;
   font-weight: 700;
-  color: var(--theme-accent-text-strong);
 }
 
 .seg-btn {
@@ -611,25 +548,24 @@ export default {
   background: rgba(255, 255, 255, 0.06);
   color: #fff;
   cursor: pointer;
-  transition: transform 0.15s ease, border 0.15s ease, box-shadow 0.15s ease,
-    background 0.15s ease;
+  transition: transform 0.15s ease, border 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
 }
 
 .seg-btn:hover {
   transform: translateY(-1px);
-  border: 1px solid var(--theme-accent-border);
-  box-shadow: 0 6px 14px var(--theme-accent-shadow);
+  border: 1px solid rgba(0, 184, 40, 0.75);
+  box-shadow: 0 6px 14px rgba(0, 184, 40, 0.14);
 }
 
 .seg-btn:focus-visible {
   outline: none;
-  border: 1px solid var(--theme-accent-border-strong);
-  box-shadow: 0 0 0 3px var(--theme-accent-glow-soft);
+  border: 1px solid rgba(0, 184, 40, 0.95);
+  box-shadow: 0 0 0 3px rgba(0, 184, 40, 0.16);
 }
 
 .seg-btn--active {
-  border: 1px solid var(--theme-accent-border-strong);
-  background: var(--theme-accent-surface);
+  border: 1px solid rgba(0, 184, 40, 0.95);
+  background: rgba(0, 184, 40, 0.18);
 }
 
 .refresh-btn {
@@ -640,8 +576,7 @@ export default {
   background: var(--theme-accent-panel-button);
   color: #fff;
   cursor: pointer;
-  transition: transform 0.15s ease, border 0.15s ease, box-shadow 0.15s ease,
-    background 0.15s ease;
+  transition: transform 0.15s ease, border 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
 }
 
 .refresh-btn:hover:not(:disabled) {
@@ -652,8 +587,8 @@ export default {
 
 .refresh-btn:focus-visible {
   outline: none;
-  border: 1px solid var(--theme-accent-border-strong);
-  box-shadow: 0 0 0 3px var(--theme-accent-glow-soft);
+  border: 1px solid rgba(0, 184, 40, 0.95);
+  box-shadow: 0 0 0 3px rgba(0, 184, 40, 0.16);
 }
 
 .refresh-btn:disabled {
@@ -675,9 +610,9 @@ export default {
   height: 24px;
   padding: 0 10px;
   border-radius: 999px;
-  background: var(--theme-accent-surface-soft);
-  border: 1px solid var(--theme-accent-border);
-  color: var(--theme-accent-text-soft);
+  background: rgba(0, 184, 40, 0.16);
+  border: 1px solid rgba(0, 184, 40, 0.45);
+  color: #dfffe5;
   font-size: 12px;
 }
 
@@ -712,15 +647,15 @@ export default {
   border-radius: 10px;
   text-decoration: none;
   color: inherit;
-  border: 1px solid var(--theme-accent-border-soft);
-  background: var(--theme-accent-panel-soft);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: linear-gradient(135deg, rgba(108, 171, 106, 0.10), rgba(255, 255, 255, 0.04));
   transition: transform 0.15s ease, border 0.15s ease, box-shadow 0.15s ease;
 }
 
 .recent-item:hover {
   transform: translateY(-1px);
-  border: 1px solid var(--theme-accent-border);
-  box-shadow: 0 6px 14px var(--theme-accent-shadow);
+  border: 1px solid rgba(0, 184, 40, 0.75);
+  box-shadow: 0 6px 14px rgba(0, 184, 40, 0.18);
 }
 
 .recent-avatar {
@@ -796,8 +731,8 @@ export default {
 
 .tree-group {
   border-radius: 10px;
-  border: 1px solid var(--theme-accent-border-soft);
-  background: var(--theme-accent-panel-soft);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: linear-gradient(135deg, rgba(108, 171, 106, 0.08), rgba(255, 255, 255, 0.02));
   padding: 12px;
 }
 
@@ -912,7 +847,7 @@ export default {
 .node-children {
   margin-top: 6px;
   padding-left: 10px;
-  border-left: 2px solid var(--theme-accent-border);
+  border-left: 2px solid rgba(0, 184, 40, 0.25);
 }
 
 #tcomment {
@@ -967,8 +902,8 @@ export default {
 .twikoo-wrap :deep(textarea:focus),
 .twikoo-wrap :deep(input:focus),
 .twikoo-wrap :deep(.tk-input:focus) {
-  border: 1px solid var(--theme-accent-border-strong);
-  box-shadow: 0 0 0 3px var(--theme-accent-glow-soft);
+  border: 1px solid rgba(0, 184, 40, 0.9);
+  box-shadow: 0 0 0 3px rgba(0, 184, 40, 0.16);
 }
 
 .twikoo-wrap :deep(.tk-row.actions),

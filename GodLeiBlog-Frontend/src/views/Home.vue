@@ -15,11 +15,7 @@
       </div>
 
       <div class="content">
-        <p
-          v-for="(line, index) in introLines"
-          :key="`intro-${index}`"
-          class="fade-in-text"
-        >
+        <p v-for="(line, index) in introLines" :key="`intro-${index}`" class="fade-in-text">
           {{ line }}
         </p>
         <div class="left-bottom-line6"></div>
@@ -34,38 +30,19 @@
     </button>
 
     <div class="card-container">
-      <div
-        class="card row-reveal-item"
-        :class="{ 'row-revealed': isHomeRowRevealed('notice-row') }"
-        data-row-key="notice-row"
-      >
-        <img
-          id="home-card-avatar"
-          :src="profileAvatar"
-          alt="头像"
-          @error="handleImageError($event, defaultAvatar)"
-        />
+      <div class="card row-reveal-item" :class="{ 'row-revealed': isHomeRowRevealed('notice-row') }"
+        data-row-key="notice-row">
+        <img id="home-card-avatar" :src="profileAvatar" alt="头像" @error="handleImageError($event, defaultAvatar)" />
 
         <div class="card-content">
           <p class="card-title">{{ siteConfig.home.noticeTitle }}</p>
-          <p
-            v-for="(line, index) in noticeLines"
-            :key="`notice-${index}`"
-            class="card-line"
-          >
+          <p v-for="(line, index) in noticeLines" :key="`notice-${index}`" class="card-line">
             {{ line }}
           </p>
 
           <div class="social-icons">
-            <a
-              v-for="item in socialLinks"
-              :key="`${item.name}-${item.url}`"
-              :href="item.url"
-              target="_blank"
-              rel="noopener"
-              class="icon"
-              :title="item.name"
-            >
+            <a v-for="item in socialLinks" :key="`${item.name}-${item.url}`" :href="item.url" target="_blank"
+              rel="noopener" class="icon" :title="item.name">
               <i :class="item.icon"></i>
             </a>
           </div>
@@ -73,29 +50,16 @@
       </div>
 
       <div id="posts" class="posts-container">
-        <div
-          v-for="(post, index) in posts"
-          :key="post.id"
-          class="post-card row-reveal-item"
-          :data-post-id="post.id"
-          :data-row-key="getPostRowKey(index)"
-          :class="[
+        <div v-for="(post, index) in posts" :key="post.id" class="post-card row-reveal-item" :data-post-id="post.id"
+          :data-row-key="getPostRowKey(index)" :class="[
             {
               'scan-active': isActive(post.id) || hoveredCardId === post.id,
               'active-post': isActive(post.id),
               'row-revealed': isHomeRowRevealed(getPostRowKey(index))
             }
-          ]"
-          @mouseenter="hoveredCardId = post.id"
-          @mouseleave="hoveredCardId = null"
-          @click="goToPost(post.id)"
-        >
-          <img
-            :src="resolvePostCover(post.cover)"
-            :alt="post.title"
-            class="post-cover"
-            @error="handleImageError($event, defaultCover)"
-          />
+          ]" @mouseenter="hoveredCardId = post.id" @mouseleave="hoveredCardId = null" @click="goToPost(post.id)">
+          <img :src="resolvePostCover(post.cover)" :alt="post.title" class="post-cover"
+            @error="handleImageError($event, defaultCover)" />
           <div class="post-info">
             <h3 class="post-title">{{ post.title }}</h3>
             <p class="post-description">{{ truncateContent(post.description) }}</p>
@@ -243,7 +207,16 @@ export default {
       this.setupHomeRowReveal()
     },
     applyHomeBackground() {
-      document.documentElement.style.setProperty('--site-home-bg-image', `url("${this.backgroundImageUrl}")`)
+      const bgUrl = this.backgroundImageUrl
+      console.log('Applying home background:', bgUrl)
+      document.documentElement.style.setProperty('--site-home-bg-image', `url("${bgUrl}")`)
+      // 同时设置 body 的背景，确保生效
+      document.body.style.backgroundImage = `
+        radial-gradient(circle at 12% 14%, rgba(122, 29, 45, 0.24), transparent 24%),
+        radial-gradient(circle at 86% 10%, rgba(214, 173, 92, 0.14), transparent 18%),
+        linear-gradient(180deg, rgba(7, 2, 4, 0.3), rgba(6, 2, 4, 0.68)),
+        url("${bgUrl}")
+      `.replace(/\s+/g, ' ').trim()
     },
     async loadPosts() {
       try {
@@ -628,6 +601,7 @@ export default {
 }
 
 @keyframes floatAndBlink {
+
   0%,
   100% {
     transform: translateX(-50%) translateY(0);

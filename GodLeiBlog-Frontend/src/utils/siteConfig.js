@@ -21,7 +21,7 @@ const defaultConfig = {
     socialLinks: [
       { name: 'GitHub', icon: 'fab fa-github', url: 'https://github.com/godlei8/GodLei_Blog/tree/Releases' },
       { name: 'Bilibili', icon: 'fab fa-bilibili', url: 'https://space.bilibili.com/274629100' },
-      { name: 'DouYin', icon: 'fab fa-douyin', url: 'https://www.douyin.com/user/MS4wLjABAAAAwQfPO4nOMC2TX_WkSZ4Z3kVybHaGXdOFRhWFfKbM9oU?from_tab_name=main' }
+      { name: 'DouYin', icon: 'fab fa-tiktok', url: 'https://www.douyin.com/user/MS4wLjABAAAAwQfPO4nOMC2TX_WkSZ4Z3kVybHaGXdOFRhWFfKbM9oU?from_tab_name=main' }
     ]
   },
   about: {
