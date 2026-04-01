@@ -5,7 +5,6 @@ const Home = () => import('@/views/Home.vue');
 const About = () => import('@/views/About.vue');
 const Archive = () => import('@/views/Archive.vue');
 const Links = () => import('@/views/Links.vue');
-const FriendsCircle = () => import('@/views/FriendsCircle.vue');
 const Comments = () => import('@/views/Comments.vue');
 const Logs = () => import('@/views/Logs.vue');
 const PostDetail = () => import('@/views/PostDetail.vue');
@@ -16,7 +15,6 @@ const routes = [
   { path: '/about', name: 'About', component: About },
   { path: '/archive', name: 'Archive', component: Archive },
   { path: '/links', name: 'Links', component: Links },
-  { path: '/fc', name: 'FriendsCircle', component: FriendsCircle },
   { path: '/comments', name: 'Comments', component: Comments },
   { path: '/logs', name: 'Logs', component: Logs },
   {
