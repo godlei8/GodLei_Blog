@@ -487,7 +487,7 @@ export default {
 }
 
 .sub-link {
-  color: #7af58f;
+  color: var(--theme-accent-text);
   text-decoration: none;
 }
 
@@ -496,7 +496,7 @@ export default {
 }
 
 .highlight {
-  color: #7af58f;
+  color: var(--theme-accent-text);
   font-weight: 600;
 }
 
