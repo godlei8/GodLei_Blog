@@ -76,12 +76,6 @@ onUnmounted(() => {
       <span class="footer-line">{{ runningTimeText }}</span>
       <span class="footer-line">总访问量（PV）：{{ pageViews }} ｜ 总访客数（UV）：{{ uniqueVisitors }}</span>
       <span class="footer-line">2026 - 2026 by GodLei</span>
-      <span class="footer-line">
-        旧站：
-        <a href="https://blog.godlei.cn" target="_blank" rel="noopener noreferrer">
-          https://blog.godlei.cn
-        </a>
-      </span>
       <span class="footer-line">粤ICP备2025505813号-1</span>
     </div>
   </footer>

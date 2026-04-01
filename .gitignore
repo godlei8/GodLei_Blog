@@ -6,3 +6,29 @@
 
 Thumbs.db
 .DS_Store
+
+# Node modules
+node_modules/
+*/node_modules/
+*/*/node_modules/
+
+# Twikoo local
+/twikoo-local/node_modules/
+
+# Environment files (keep .env.example if exists)
+.env.local
+.env.*.local
+
+# Build outputs
+dist/
+build/
+
+# Logs
+*.log
+logs/
+
+# MongoDB
+mongodb.zip
+
+# Server key
+server-key.pem

@@ -47,26 +47,6 @@
           </li>
           <li>如果这里的内容刚好帮到了你，那这份记录就很值得继续写下去。</li>
         </ul>
-
-        <div class="stats-inline">
-          <h3 class="section-title section-title--stats">完全不完全统计</h3>
-          <div class="stats-images stats-images--stats">
-            <img
-              :src="githubStatsCard"
-              alt="GitHub Stats"
-              class="stats-img stats-img--stats stats-img--stats-first"
-              loading="lazy"
-              @error="hideImage"
-            />
-            <img
-              :src="githubLangsCard"
-              alt="GitHub Languages"
-              class="stats-img stats-img--stats"
-              loading="lazy"
-              @error="hideImage"
-            />
-          </div>
-        </div>
       </section>
 
       <section class="section-card">
