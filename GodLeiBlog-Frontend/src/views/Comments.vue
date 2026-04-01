@@ -514,8 +514,8 @@ export default {
   max-width: 900px;
   margin-left: auto;
   margin-right: auto;
-  background: linear-gradient(135deg, rgba(108, 171, 106, 0.12), rgba(0, 0, 0, 0.82));
-  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: var(--theme-accent-panel);
+  border: 1px solid var(--theme-accent-border-soft);
 }
 
 .card-header {
@@ -731,8 +731,8 @@ export default {
 
 .tree-group {
   border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  background: linear-gradient(135deg, rgba(108, 171, 106, 0.08), rgba(255, 255, 255, 0.02));
+  border: 1px solid var(--theme-accent-border-soft);
+  background: var(--theme-accent-panel-soft);
   padding: 12px;
 }
 
