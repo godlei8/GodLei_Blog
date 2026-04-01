@@ -553,19 +553,19 @@ export default {
 
 .seg-btn:hover {
   transform: translateY(-1px);
-  border: 1px solid rgba(0, 184, 40, 0.75);
-  box-shadow: 0 6px 14px rgba(0, 184, 40, 0.14);
+  border: 1px solid var(--theme-accent-border);
+  box-shadow: 0 6px 14px var(--theme-accent-shadow);
 }
 
 .seg-btn:focus-visible {
   outline: none;
-  border: 1px solid rgba(0, 184, 40, 0.95);
-  box-shadow: 0 0 0 3px rgba(0, 184, 40, 0.16);
+  border: 1px solid var(--theme-accent-border-strong);
+  box-shadow: 0 0 0 3px var(--theme-accent-glow-soft);
 }
 
 .seg-btn--active {
-  border: 1px solid rgba(0, 184, 40, 0.95);
-  background: rgba(0, 184, 40, 0.18);
+  border: 1px solid var(--theme-accent-border-strong);
+  background: var(--theme-accent-surface);
 }
 
 .refresh-btn {
@@ -587,8 +587,8 @@ export default {
 
 .refresh-btn:focus-visible {
   outline: none;
-  border: 1px solid rgba(0, 184, 40, 0.95);
-  box-shadow: 0 0 0 3px rgba(0, 184, 40, 0.16);
+  border: 1px solid var(--theme-accent-border-strong);
+  box-shadow: 0 0 0 3px var(--theme-accent-glow-soft);
 }
 
 .refresh-btn:disabled {
@@ -610,9 +610,9 @@ export default {
   height: 24px;
   padding: 0 10px;
   border-radius: 999px;
-  background: rgba(0, 184, 40, 0.16);
-  border: 1px solid rgba(0, 184, 40, 0.45);
-  color: #dfffe5;
+  background: var(--theme-accent-surface-soft);
+  border: 1px solid var(--theme-accent-border);
+  color: var(--theme-accent-text-soft);
   font-size: 12px;
 }
 
@@ -647,15 +647,15 @@ export default {
   border-radius: 10px;
   text-decoration: none;
   color: inherit;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  background: linear-gradient(135deg, rgba(108, 171, 106, 0.10), rgba(255, 255, 255, 0.04));
+  border: 1px solid var(--theme-accent-border-soft);
+  background: var(--theme-accent-panel-soft);
   transition: transform 0.15s ease, border 0.15s ease, box-shadow 0.15s ease;
 }
 
 .recent-item:hover {
   transform: translateY(-1px);
-  border: 1px solid rgba(0, 184, 40, 0.75);
-  box-shadow: 0 6px 14px rgba(0, 184, 40, 0.18);
+  border: 1px solid var(--theme-accent-border);
+  box-shadow: 0 6px 14px var(--theme-accent-shadow);
 }
 
 .recent-avatar {
@@ -847,7 +847,7 @@ export default {
 .node-children {
   margin-top: 6px;
   padding-left: 10px;
-  border-left: 2px solid rgba(0, 184, 40, 0.25);
+  border-left: 2px solid var(--theme-accent-border);
 }
 
 #tcomment {
@@ -902,8 +902,8 @@ export default {
 .twikoo-wrap :deep(textarea:focus),
 .twikoo-wrap :deep(input:focus),
 .twikoo-wrap :deep(.tk-input:focus) {
-  border: 1px solid rgba(0, 184, 40, 0.9);
-  box-shadow: 0 0 0 3px rgba(0, 184, 40, 0.16);
+  border: 1px solid var(--theme-accent-border-strong);
+  box-shadow: 0 0 0 3px var(--theme-accent-glow-soft);
 }
 
 .twikoo-wrap :deep(.tk-row.actions),
