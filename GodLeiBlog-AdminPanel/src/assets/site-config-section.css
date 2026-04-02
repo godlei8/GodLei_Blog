@@ -153,6 +153,68 @@
   align-items: flex-start;
 }
 
+.settings-home-layout {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  align-items: start;
+  margin-top: 4px;
+}
+
+.settings-subsection-card {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 18px;
+  border: 1px solid rgba(214, 173, 92, 0.14);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(250, 246, 238, 0.84));
+}
+
+.settings-subsection-card__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.settings-subsection-card__head h4 {
+  margin: 0;
+  font-size: 16px;
+  color: var(--admin-text);
+}
+
+.settings-subsection-card__head p {
+  margin: 4px 0 0;
+  color: var(--admin-text-muted);
+  font-size: 12px;
+  line-height: 1.65;
+}
+
+.settings-preview__notice-mini {
+  display: grid;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(214, 173, 92, 0.14);
+  background: rgba(250, 246, 238, 0.84);
+}
+
+.settings-preview__notice-mini strong {
+  color: var(--admin-text);
+  font-size: 14px;
+}
+
+.settings-preview__notice-mini ul {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--admin-text-muted);
+  line-height: 1.65;
+}
+
+.settings-preview__notice-mini li + li {
+  margin-top: 4px;
+}
+
 .settings-array__list {
   display: grid;
   gap: 10px;
@@ -172,6 +234,42 @@
 .settings-array__list--starter {
   grid-template-columns: repeat(auto-fit, minmax(320px, 520px));
   justify-content: start;
+}
+
+.settings-array__list--compact {
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.settings-array__item--compact {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+}
+
+.settings-array__item--compact .el-button {
+  min-width: 84px;
+}
+
+.settings-array__list--social {
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.settings-social-item--stacked {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  align-items: start;
+}
+
+.settings-social-item--stacked .el-input:nth-of-type(3) {
+  grid-column: 1 / -1;
+}
+
+.settings-social-item--stacked .el-button {
+  justify-self: end;
+  margin-top: 2px;
 }
 
 .settings-array__item,
@@ -406,6 +504,8 @@
 @media (max-width: 900px) {
   .settings-basic-grid,
   .settings-grid--two,
+  .settings-home-layout,
+  .settings-array__item--compact,
   .settings-array__item--starter,
   .settings-social-item,
   .settings-media-item,
@@ -423,12 +523,22 @@
 
   .settings-inline,
   .settings-section__head,
+  .settings-subsection-card__head,
   .settings-array__head {
     flex-direction: column;
   }
 
   .settings-inline {
     align-items: stretch;
+  }
+
+  .settings-social-item--stacked .el-input:nth-of-type(3) {
+    grid-column: auto;
+  }
+
+  .settings-social-item--stacked .el-button,
+  .settings-array__item--compact .el-button {
+    justify-self: stretch;
   }
 
   .settings-array__item--starter .el-button {

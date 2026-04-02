@@ -15,7 +15,7 @@
     </section>
 
     <section class="login-panel page-card">
-      <span class="login-panel__eyebrow">后台登录</span>
+      <span class="login-panel__eyebrow">后台管理</span>
       <h2>欢迎回来</h2>
       <p class="login-panel__subtitle">登录后继续维护你的内容、视觉与站点节奏。</p>
 
@@ -164,6 +164,13 @@ async function handleLogin() {
   font-size: 12px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
+}
+
+.login-panel__eyebrow {
+  border-color: rgba(214, 173, 92, 0.34);
+  background: rgba(214, 173, 92, 0.12);
+  color: #9b6a1f;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.48);
 }
 
 .login-hero h1 {

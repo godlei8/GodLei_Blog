@@ -28,13 +28,15 @@ body {
   background-position: center;
   background-repeat: no-repeat;
   background-attachment: scroll, scroll, scroll, fixed;
-  overflow-y: scroll;
+  overflow-y: auto;
   color: white;
   touch-action: pan-y;
+  scrollbar-width: thin;
+  scrollbar-color: #3a141d #12070a;
 }
 
 ::-webkit-scrollbar {
-  width: 12px;
+  width: 10px;
 }
 
 ::-webkit-scrollbar-track {
