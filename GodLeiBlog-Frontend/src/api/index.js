@@ -67,6 +67,19 @@ export const fetchLinks = () => request('GET', '/api/links/list');
 
 export const fetchSiteConfig = () => request('GET', '/api/site/config');
 
+export const fetchMomentsList = (page = 1, pageSize = 10, status = 1) => {
+  const params = new URLSearchParams({
+    page: String(page),
+    pageSize: String(pageSize),
+  });
+  if (status !== undefined && status !== null && status !== '') {
+    params.set('status', String(status));
+  }
+  return request('GET', `/api/moments/list?${params.toString()}`);
+};
+
+export const fetchMomentById = (id) => request('GET', `/api/moments/get?id=${id}`);
+
 // 上报一次访问
 export const trackSiteVisit = (visitorKey, path = '/') => {
   const params = new URLSearchParams({ path });

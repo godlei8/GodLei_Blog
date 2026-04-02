@@ -6,7 +6,7 @@ import vue from '@vitejs/plugin-vue'
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
-  const twikooProxyTarget = env.VITE_TWIKOO_PROXY_TARGET || env.VITE_TWIKOO_URL || 'https://twikoo.godlei.cn'
+  const twikooProxyTarget = env.VITE_TWIKOO_PROXY_TARGET || 'http://localhost:3000'
 
   // 本地访问 Twikoo：浏览器直连会 CORS，走同源代理转发。
   const twikooProxy = {
@@ -22,6 +22,21 @@ export default defineConfig(({ mode }) => {
     }
   }
 
+  const apiProxy = {
+    '/api': {
+      target: 'http://localhost:8080',
+      changeOrigin: true,
+      rewrite: (path) => path.replace(/^\/api/, '')
+    }
+  }
+
+  const uploadProxy = {
+    '/uploads': {
+      target: 'http://localhost:8080',
+      changeOrigin: true
+    }
+  }
+
   return {
     plugins: [vue()],
     resolve: {
@@ -32,15 +47,8 @@ export default defineConfig(({ mode }) => {
     server: {
       proxy: {
         // 兼容前台统一使用 /api 前缀：去掉 /api 并转发到后端真实路由
-        '/api': {
-          target: 'http://localhost:8080',
-          changeOrigin: true,
-          rewrite: (path) => path.replace(/^\/api/, '')
-        },
-        '/uploads': {
-          target: 'http://localhost:8080',
-          changeOrigin: true
-        },
+        ...apiProxy,
+        ...uploadProxy,
 
         // 本地开发把前端请求转发到后端，避免 CORS
         '/post': {
@@ -60,6 +68,8 @@ export default defineConfig(({ mode }) => {
     },
     preview: {
       proxy: {
+        ...apiProxy,
+        ...uploadProxy,
         ...twikooProxy
       }
     }

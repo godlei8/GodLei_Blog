@@ -4,14 +4,9 @@
  */
 
 const DEFAULT_TWIKOO_URL = 'https://twikoo.godlei.cn'
-const TWIKOO_HOSTNAME = (() => {
-  try {
-    return new URL(DEFAULT_TWIKOO_URL).hostname
-  } catch {
-    return 'twikoo.godlei.cn'
-  }
-})()
+const SAME_ORIGIN_TWIKOO_PROXY = '/twikoo-proxy/'
 const TWIKOO_UNAVAILABLE_HINT = '当前 Twikoo 服务地址不可用，请检查 VITE_TWIKOO_URL 或 /twikoo-proxy 的反向代理目标。'
+const TWIKOO_RATE_LIMIT_HINT = 'Twikoo 评论当前返回 Too Many Requests，请确认服务端已关闭限流或稍后再试。'
 
 let _twikooApiCache = null
 let _twikooLoadPromise = null
@@ -54,12 +49,30 @@ function formatTwikooTarget(target) {
   }
 }
 
+function resolveTwikooTarget(target) {
+  const raw = String(target || '').trim()
+  if (!raw) return ''
+  if (typeof window === 'undefined') return raw
+  try {
+    return new URL(raw, window.location.origin).toString()
+  } catch {
+    return raw
+  }
+}
+
 function buildTwikooRequestErrorMessage(status, detail = '', target = '') {
   const compactDetail = compactTwikooDetail(detail)
+  const isRateLimited =
+    Number(status) === 429
+    || /Too Many Requests/i.test(compactDetail)
   const isUnavailable =
     Number(status) === 405
     || /405 Not Allowed/i.test(compactDetail)
     || /站点已暂停|停止运行|nginx/i.test(compactDetail)
+
+  if (isRateLimited) {
+    return `${TWIKOO_RATE_LIMIT_HINT} 当前目标：${formatTwikooTarget(target)}`
+  }
 
   if (isUnavailable) {
     return `${TWIKOO_UNAVAILABLE_HINT} 当前目标：${formatTwikooTarget(target)}`
@@ -175,16 +188,9 @@ export async function loadTwikoo() {
 
 export function getTwikooEnvId() {
   const fromEnv = import.meta.env.VITE_TWIKOO_URL
-  if (fromEnv) return fromEnv.replace(/\/$/, '')
-
+  if (fromEnv) return resolveTwikooTarget(fromEnv)
   if (typeof window === 'undefined') return DEFAULT_TWIKOO_URL
-
-  const host = window.location.hostname
-  if (host === TWIKOO_HOSTNAME) {
-    return DEFAULT_TWIKOO_URL
-  }
-
-  return `${window.location.origin}/twikoo-proxy/`
+  return resolveTwikooTarget(SAME_ORIGIN_TWIKOO_PROXY)
 }
 
 export function getTwikooAccessToken() {
@@ -192,13 +198,9 @@ export function getTwikooAccessToken() {
   return window.localStorage.getItem('twikoo-access-token') || ''
 }
 
-function isUrlLike(value) {
-  return /^https?:\/\//i.test(value)
-}
-
 export async function requestTwikooEvent(event, payload = {}, envId = getTwikooEnvId()) {
   const target = typeof envId === 'string' ? envId.trim() : ''
-  if (!target || !isUrlLike(target)) {
+  if (!target) {
     throw new Error(`Twikoo 服务未配置，请设置 VITE_TWIKOO_URL 或提供 /twikoo-proxy。当前目标：${formatTwikooTarget(target)}`)
   }
 

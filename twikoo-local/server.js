@@ -6,7 +6,8 @@ process.env.TWIKOO_ADMIN_PASS = 'admin123'
 process.env.SITE_NAME = 'GodLei Blog'
 process.env.SITE_URL = 'https://blog.godlei.cn'
 // 禁用限流（开发环境）
-process.env.TWIKOO_RATE_LIMIT = '0'
+process.env.LIMIT_PER_MINUTE = '0'
+process.env.LIMIT_PER_MINUTE_ALL = '0'
 
 const twikoo = require('twikoo-vercel')
 
@@ -44,17 +45,17 @@ const server = http.createServer(async (req, res) => {
       try {
         const parsedBody = JSON.parse(body)
 
-        // 获取请求 IP
-        const requestIp = req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || req.socket.remoteAddress || '127.0.0.1'
+        // 获取真实 IP
+        const requestIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '127.0.0.1'
 
-        // 创建 req 对象给 Twikoo
+        // 构造 Twikoo 需要的请求对象
         const twikooReq = {
           body: parsedBody,
           headers: req.headers,
           ip: typeof requestIp === 'string' ? requestIp.split(',')[0].trim() : requestIp
         }
 
-        // 创建 res 对象给 Twikoo
+        // 构造响应对象
         const twikooRes = {
           statusCode: 200,
           headers: {},
@@ -77,7 +78,7 @@ const server = http.createServer(async (req, res) => {
         // 调用 Twikoo
         await twikoo(twikooReq, twikooRes)
 
-        // 返回响应
+        // 返回结果
         res.statusCode = twikooRes.statusCode
         Object.entries(twikooRes.headers).forEach(([key, value]) => {
           res.setHeader(key, value)
@@ -86,23 +87,19 @@ const server = http.createServer(async (req, res) => {
       } catch (error) {
         console.error('Twikoo error:', error)
         res.statusCode = 500
-        res.end(
-          JSON.stringify({
-            error: error.message,
-            code: error.code || 'UNKNOWN_ERROR'
-          })
-        )
+        res.end(JSON.stringify({
+          error: error.message,
+          code: error.code || 'UNKNOWN_ERROR'
+        }))
       }
     })
   } catch (error) {
     console.error('Request error:', error)
     res.statusCode = 500
-    res.end(
-      JSON.stringify({
-        error: error.message,
-        code: 'REQUEST_ERROR'
-      })
-    )
+    res.end(JSON.stringify({
+      error: error.message,
+      code: 'REQUEST_ERROR'
+    }))
   }
 })
 

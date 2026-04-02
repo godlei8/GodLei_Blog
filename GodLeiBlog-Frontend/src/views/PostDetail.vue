@@ -109,6 +109,7 @@ import yaml from 'highlight.js/lib/languages/yaml';
 import fm from 'front-matter';
 import 'highlight.js/styles/github-dark.css';
 import { bindImageFallback, coverFallbackUrl, resolveImageUrl } from '@/utils/image';
+import { setPageContext } from '@/utils/pageContext';
 
 [
   ['bash', bash],
@@ -369,6 +370,25 @@ export default {
       return false;
     },
 
+    syncArticleContext() {
+      const parsed = fm(this.post.content || '');
+      const attributes = parsed.attributes || {};
+      const body = String(parsed.body || '')
+        .replace(/[`#>*_\-\[\]\(\)!]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+      setPageContext({
+        pageType: 'article',
+        route: this.$route.fullPath || `/posts/${this.id}`,
+        title: attributes.title || this.post.title || '文章',
+        summary: attributes.description || this.post.description || '当前文章正文与评论区',
+        contentExcerpt: body.slice(0, 1200),
+        momentId: null,
+        currentMomentSummary: '',
+      });
+    },
+
     formatDate(dateString) {
       if (!dateString) return '未知时间';
       const date = new Date(dateString);
@@ -452,6 +472,7 @@ export default {
     try {
       const response = await fetchPostById(this.id);
       this.post = response.data;
+      this.syncArticleContext();
     } catch (error) {
       console.error('加载文章失败:', error);
     }

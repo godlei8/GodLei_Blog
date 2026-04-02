@@ -1,4 +1,3 @@
-<!-- LoadingSpinner.vue -->
 <template>
   <div class="terminal-loader">
     <div class="terminal-header">
@@ -13,7 +12,7 @@
       <pre ref="output" class="output"></pre>
       <div class="input-line">
         <span class="prompt">root@godlei-blog:~$ </span>
-        <span class="cursor"></span>
+        <span ref="cursor" class="cursor"></span>
       </div>
     </div>
   </div>
@@ -24,15 +23,24 @@ export default {
   name: 'TerminalLoader',
   data() {
     return {
-      isAnimationFinished: false // 标记动画是否完成
-    };
+      bootTimer: null,
+      hasEmittedFinish: false,
+    }
   },
   mounted() {
-    this.simulateBootProcess();
+    this.simulateBootProcess()
+  },
+  beforeUnmount() {
+    if (this.bootTimer) {
+      clearInterval(this.bootTimer)
+      this.bootTimer = null
+    }
   },
   methods: {
     simulateBootProcess() {
-      const output = this.$refs.output;
+      const output = this.$refs.output
+      if (!output) return
+
       const lines = [
         '[INFO] Initializing system...',
         '[OK] Mounted root filesystem.',
@@ -41,40 +49,36 @@ export default {
         '[INFO] Loading modules...',
         '[OK] Graphics driver loaded.',
         '[INFO] Starting desktop environment...',
-        '[OK] Desktop ready.'
-      ];
+        '[OK] Desktop ready.',
+      ]
 
-      let index = 0;
-      const interval = setInterval(() => {
+      let index = 0
+      this.bootTimer = setInterval(() => {
         if (index < lines.length) {
-          output.textContent += `${lines[index]}\n`;
-          index++;
-        } else {
-          clearInterval(interval);
-          this.showPrompt();
+          output.textContent += `${lines[index]}\n`
+          index += 1
+          return
         }
-      }, 70); // 每 300ms 打印一行
+
+        clearInterval(this.bootTimer)
+        this.bootTimer = null
+        this.showPrompt()
+      }, 70)
     },
-   showPrompt() {
-  const prompt = document.querySelector('.prompt');
-  const cursor = document.querySelector('.cursor');
-
-  // 显示光标闪烁效果
-  cursor.style.display = 'inline-block';
-  setInterval(() => {
-    cursor.style.visibility = cursor.style.visibility === 'hidden' ? 'visible' : 'hidden';
-  }, 500);
-
-  // 动画完成标志
-  this.isAnimationFinished = true;
-  this.$emit('animation-finished'); // 确保事件被触发
+    showPrompt() {
+      const cursor = this.$refs.cursor
+      if (cursor) {
+        cursor.style.display = 'inline-block'
+      }
+      if (this.hasEmittedFinish) return
+      this.hasEmittedFinish = true
+      this.$emit('animation-finished')
+    },
+  },
 }
-  }
-};
 </script>
 
 <style scoped>
-/* 样式保持不变 */
 .terminal-loader {
   position: fixed;
   inset: 0;
@@ -154,9 +158,11 @@ export default {
 }
 
 @keyframes blink {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
   }
+
   50% {
     opacity: 0;
   }

@@ -145,6 +145,30 @@ export const saveSiteConfig = (data) => {
   return request.put('/admin/site-config/save', data)
 }
 
+export const getAssistantStatus = () => {
+  return request.get('/admin/assistant/status')
+}
+
+export const updateAssistantApiKey = (data) => {
+  return request.put('/admin/assistant/api-key', data)
+}
+
+export const getMomentList = (params) => {
+  return request.get('/admin/moments/list', { params })
+}
+
+export const addMoment = (data) => {
+  return request.post('/admin/moments/add', data)
+}
+
+export const updateMoment = (data) => {
+  return request.put('/admin/moments/update', data)
+}
+
+export const deleteMoment = (params) => {
+  return request.delete('/admin/moments/delete', { params })
+}
+
 export const uploadImage = (file, bizType = 'common') => {
   const formData = new FormData()
   formData.append('file', file)

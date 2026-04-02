@@ -1,0 +1,20 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="admin-bg" x1="8" y1="6" x2="56" y2="58" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFF8EE"/>
+      <stop offset="1" stop-color="#F1E0BF"/>
+    </linearGradient>
+    <linearGradient id="admin-accent" x1="16" y1="16" x2="48" y2="48" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#9A4E40"/>
+      <stop offset="1" stop-color="#D6AD5C"/>
+    </linearGradient>
+  </defs>
+  <rect x="4" y="4" width="56" height="56" rx="18" fill="url(#admin-bg)"/>
+  <rect x="4.75" y="4.75" width="54.5" height="54.5" rx="17.25" stroke="#CBA460" stroke-opacity="0.45" stroke-width="1.5"/>
+  <rect x="15" y="18" width="21" height="6.5" rx="3.25" fill="url(#admin-accent)"/>
+  <circle cx="43.5" cy="21.25" r="3.25" fill="#9A4E40"/>
+  <rect x="15" y="29" width="30" height="6.5" rx="3.25" fill="#D6AD5C"/>
+  <circle cx="50" cy="32.25" r="3.25" fill="#9A4E40"/>
+  <rect x="15" y="40" width="16" height="6.5" rx="3.25" fill="#9A4E40"/>
+  <rect x="35" y="40" width="15" height="6.5" rx="3.25" fill="#D6AD5C"/>
+</svg>

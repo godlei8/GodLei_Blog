@@ -8,7 +8,7 @@ import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
-  const twikooProxyTarget = env.VITE_TWIKOO_PROXY_TARGET || env.VITE_TWIKOO_URL || 'https://twikoo.godlei.cn'
+  const twikooProxyTarget = env.VITE_TWIKOO_PROXY_TARGET || 'http://localhost:3000'
 
   return {
     // 部署在 Nginx 子路径 /admin/ 时使用；本地 dev 不受影响

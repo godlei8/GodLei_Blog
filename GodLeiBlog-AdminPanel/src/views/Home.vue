@@ -92,17 +92,13 @@
 </template>
 
 <script>
-import { getAdminDashboardStats, getPostList } from '@/api'
+import { getAdminDashboardStats, getMomentList, getPostList } from '@/api'
 
-const PROD_TWIKOO_URL = (import.meta.env.VITE_TWIKOO_URL || 'https://twikoo.godlei.cn').replace(/\/$/, '')
-const TWIKOO_HOSTNAME = (() => {
-  try {
-    return new URL(PROD_TWIKOO_URL).hostname
-  } catch {
-    return 'twikoo.godlei.cn'
-  }
-})()
+const PROD_TWIKOO_URL = 'https://twikoo.godlei.cn'
+const SAME_ORIGIN_TWIKOO_PROXY = '/twikoo-proxy/'
 const TWIKOO_UNAVAILABLE_HINT = '当前 Twikoo 服务地址不可用，请检查 VITE_TWIKOO_URL 或 /twikoo-proxy 的反向代理目标。'
+const TWIKOO_RATE_LIMIT_HINT = 'Twikoo 评论当前返回 Too Many Requests，请确认服务端已关闭限流或稍后再试。'
+const TWIKOO_LOCAL_SERVICE_HINT = '如果是本地开发，请确认本地 Twikoo 服务已启动，默认地址为 http://127.0.0.1:3000 。'
 
 function compactTwikooDetail(detail) {
   return String(detail || '')
@@ -123,15 +119,48 @@ function formatTwikooTarget(target) {
   }
 }
 
+function resolveTwikooTarget(target) {
+  const raw = String(target || '').trim()
+  if (!raw) return ''
+  if (typeof window === 'undefined') return raw
+  try {
+    return new URL(raw, window.location.origin).toString()
+  } catch {
+    return raw
+  }
+}
+
+function isLocalHostname(hostname = '') {
+  return ['localhost', '127.0.0.1', '::1'].includes(String(hostname || '').toLowerCase())
+}
+
+function shouldShowLocalTwikooHint(target = '') {
+  try {
+    const parsed = new URL(target)
+    return isLocalHostname(parsed.hostname) && parsed.pathname.startsWith('/twikoo-proxy')
+  } catch {
+    return false
+  }
+}
+
 function buildTwikooRequestErrorMessage(status, detail = '', target = '') {
   const compactDetail = compactTwikooDetail(detail)
+  const isRateLimited =
+    Number(status) === 429
+    || /Too Many Requests/i.test(compactDetail)
   const isUnavailable =
     Number(status) === 405
+    || (Number(status) === 500 && (!compactDetail || /proxy|ECONNREFUSED|connect ECONNREFUSED|socket hang up|fetch failed/i.test(compactDetail)))
     || /405 Not Allowed/i.test(compactDetail)
-    || /站点已暂停|停止运行|nginx/i.test(compactDetail)
+    || /站点已暂停|停止运行|nginx|ECONNREFUSED|connect ECONNREFUSED|Error occurred while trying to proxy/i.test(compactDetail)
+
+  if (isRateLimited) {
+    return `${TWIKOO_RATE_LIMIT_HINT} 当前目标：${formatTwikooTarget(target)}`
+  }
 
   if (isUnavailable) {
-    return `${TWIKOO_UNAVAILABLE_HINT} 当前目标：${formatTwikooTarget(target)}`
+    const localHint = shouldShowLocalTwikooHint(target) ? ` ${TWIKOO_LOCAL_SERVICE_HINT}` : ''
+    return `${TWIKOO_UNAVAILABLE_HINT}${localHint} 当前目标：${formatTwikooTarget(target)}`
   }
 
   return `Twikoo 请求失败：${status}${compactDetail ? ` ${compactDetail}` : ''}`
@@ -262,10 +291,10 @@ export default {
     },
 
     getTwikooEnvId() {
+      const fromEnv = import.meta.env.VITE_TWIKOO_URL
+      if (fromEnv) return resolveTwikooTarget(fromEnv)
       if (typeof window === 'undefined') return PROD_TWIKOO_URL
-      const host = window.location.hostname
-      if (host === TWIKOO_HOSTNAME) return PROD_TWIKOO_URL
-      return `${window.location.origin}/twikoo-proxy/`
+      return resolveTwikooTarget(SAME_ORIGIN_TWIKOO_PROXY)
     },
 
     htmlToText(html) {
@@ -290,7 +319,18 @@ export default {
       if (!s) return s
       // 友链页：Twikoo 历史评论聚合在 /link，但实际页面是 /links
       if (s === '/link') return '/links'
+      const momentMatch = s.match(/^\/moments\/(\d+)$/)
+      if (momentMatch) return `/moments#moment-${momentMatch[1]}`
       return s
+    },
+
+    formatCommentPathLabel(raw) {
+      const s = (raw || '').toString()
+      if (!s) return '未知页面'
+      if (s === '/link') return '/links'
+      const momentMatch = s.match(/^\/moments\/(\d+)$/)
+      if (momentMatch) return `朋友圈 / #${momentMatch[1]}`
+      return this.mapCommentPathToPagePath(s)
     },
 
     twikooKeysForUrl(rawUrl) {
@@ -357,7 +397,7 @@ export default {
             id: c.id,
             nick: c.nick || '匿名',
             created: c.created,
-            page: this.mapCommentPathToPagePath(rawUrl),
+            page: this.formatCommentPathLabel(rawUrl),
             text,
           })
         }
@@ -371,13 +411,23 @@ export default {
       this.latestComments = []
       this.commentsError = ''
       try {
-        const resp = await getPostList({ page: 1, pageSize: 20, orderBy: 'update_time', orderType: 'desc' })
-        const posts = resp?.rows || []
+        const [postResp, momentResp] = await Promise.allSettled([
+          getPostList({ page: 1, pageSize: 20, orderBy: 'update_time', orderType: 'desc' }),
+          getMomentList({ page: 1, pageSize: 8, status: 1 }),
+        ])
+        const posts = postResp.status === 'fulfilled' ? (postResp.value?.rows || []) : []
+        const moments = momentResp.status === 'fulfilled' ? (momentResp.value?.rows || []) : []
 
         // 为了避免拉全站所有页面，这里取“最新评论更可能出现的页面”：
         // 1) 留言页 /comments、友链页 /link
         // 2) 最近更新的若干篇文章（取前 8 篇）
-        const urlKeys = ['/comments', '/link', ...posts.slice(0, 8).map((p) => `/posts/${p.id}`)]
+        // 3) 最近发布的朋友圈动态（取前 8 条）
+        const urlKeys = [
+          '/comments',
+          '/link',
+          ...posts.slice(0, 8).map((p) => `/posts/${p.id}`),
+          ...moments.slice(0, 8).map((item) => `/moments/${item.id}`),
+        ]
 
         const out = []
         const concurrency = 3
@@ -442,32 +492,39 @@ export default {
 
 <style scoped>
 .dashboard {
-  padding: 16px;
+  display: grid;
+  gap: 14px;
 }
 
 .dashboard-head {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 14px;
+  padding: 16px 18px;
+  border-radius: 18px;
+  border: 1px solid var(--admin-border-soft);
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 12px 22px var(--admin-shadow);
 }
 
 .head-title {
   margin: 0;
-  font-size: 18px;
+  font-size: 20px;
 }
 
 .head-sub {
   color: var(--admin-text-muted);
-  font-size: 13px;
+  font-size: 12px;
   margin-top: 4px;
+  line-height: 1.6;
 }
 
 .head-right {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .days-select {
@@ -476,45 +533,61 @@ export default {
 
 .metric-row {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-  margin-bottom: 16px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
 }
 
 .metric-card {
-  min-height: 110px;
+  min-height: 116px;
   overflow: hidden;
+  border-radius: 18px;
+  border: 1px solid rgba(214, 173, 92, 0.12);
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.metric-card :deep(.el-card__body) {
+  padding: 16px;
 }
 
 .metric-label {
   color: var(--admin-text-muted);
-  font-size: 13px;
+  font-size: 12px;
   margin-bottom: 8px;
 }
 
 .metric-value {
   font-size: 28px;
   font-weight: 700;
-  color: var(--admin-gold-soft);
+  color: var(--admin-accent);
 }
 
 .metric-extra {
   margin-top: 8px;
   color: var(--admin-text-muted);
-  font-size: 13px;
+  font-size: 12px;
 }
 
-.chart-row {
-  margin-bottom: 16px;
+.chart-card,
+.comments-card {
+  border-radius: 18px;
+  border: 1px solid rgba(214, 173, 92, 0.12);
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.chart-card :deep(.el-card__header),
+.comments-card :deep(.el-card__header) {
+  padding: 16px 16px 0;
+  border-bottom: none;
+}
+
+.chart-card :deep(.el-card__body),
+.comments-card :deep(.el-card__body) {
+  padding: 14px 16px 16px;
 }
 
 .chart {
   height: 320px;
   width: 100%;
-}
-
-.comments-card {
-  margin-top: 16px;
 }
 
 .comments-head {
@@ -526,7 +599,7 @@ export default {
 }
 
 .comment-text {
-  max-width: 560px;
+  max-width: 520px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -551,9 +624,16 @@ export default {
 }
 
 @media (max-width: 768px) {
+  .dashboard-head,
+  .head-right {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
   .metric-row {
     grid-template-columns: 1fr;
   }
+
   .chart {
     height: 260px;
   }

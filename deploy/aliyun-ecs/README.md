@@ -76,6 +76,9 @@ Key variables:
 - `HM_DB_PASSWORD`
 - `HM_DB_HOST`
 - `HM_LOCAL_UPLOAD_DIR`
+- `BLOG_ASSISTANT_API_KEY`
+- `MINIMAX_API_KEY` (optional fallback)
+- `OPENAI_API_KEY` (optional fallback)
 - `SPRING_PROFILES_ACTIVE`
 - `SERVER_PORT`
 - `JAVA_OPTS`
@@ -95,3 +98,4 @@ chmod +x scripts/*.sh
 - The default package path assumes `/opt/godleiblog`.
 - Frontend and admin panel use same-origin `/api`, `/uploads`, and `/twikoo-proxy`.
 - If you are not using Twikoo, you can remove the `/twikoo-proxy` block from the Nginx config.
+- After updating `backend.env` or `twikoo.service`, run `sudo systemctl daemon-reload` and restart the affected services.

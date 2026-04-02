@@ -42,6 +42,15 @@ aliyun:
     region: cn-beijing
 
 blog:
+  assistant:
+    enabled: ${BLOG_ASSISTANT_ENABLED:true}
+    base-url: ${BLOG_ASSISTANT_BASE_URL:https://api.minimaxi.com/v1}
+    api-key: ${BLOG_ASSISTANT_API_KEY:${MINIMAX_API_KEY:${OPENAI_API_KEY:}}}
+    model: MiniMax-M2.7
+    connect-timeout-ms: ${BLOG_ASSISTANT_CONNECT_TIMEOUT_MS:10000}
+    read-timeout-ms: ${BLOG_ASSISTANT_READ_TIMEOUT_MS:120000}
+    max-requests-per-minute: ${BLOG_ASSISTANT_MAX_REQUESTS_PER_MINUTE:12}
+    max-input-chars: ${BLOG_ASSISTANT_MAX_INPUT_CHARS:16000}
   storage:
     mode: ${BLOG_STORAGE_MODE:local}
     public-base-url: ${BLOG_STORAGE_PUBLIC_BASE_URL:}

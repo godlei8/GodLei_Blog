@@ -1,56 +1,85 @@
 <template>
-  <div class="logs-manage-page page-card">
-    <div class="page-toolbar">
-      <el-input
-        v-model="keyword"
-        placeholder="请输入版本号（如 v1.3.0）"
-        clearable
-        class="toolbar-input"
-      />
-      <el-button type="primary" @click="fetchList">搜索</el-button>
-      <el-button type="success" @click="openAddDialog">新增版本</el-button>
-      <el-button type="info" @click="goToContentView">查看日志内容</el-button>
-    </div>
+  <div class="logs-manage-page page-stack">
+    <section class="page-card">
+      <div class="page-toolbar page-toolbar--split">
+        <div class="page-toolbar__group">
+          <el-input
+            v-model="keyword"
+            placeholder="输入版本号，例如 v1.3.0"
+            clearable
+            class="toolbar-input"
+            @keyup.enter="fetchList"
+          />
+        </div>
 
-    <div class="current-info">
-      <span class="current-label">当前生效版本：</span>
-      <el-tag v-if="currentVersion" type="success">
-        {{ currentVersion.version }} ({{ currentVersion.date }})
-      </el-tag>
-      <el-tag v-else type="info">暂无</el-tag>
-    </div>
+        <div class="page-toolbar__group">
+          <el-button type="primary" @click="fetchList">搜索</el-button>
+          <el-button type="success" @click="openAddDialog">新增版本</el-button>
+          <el-button type="info" @click="goToContentView">查看日志内容</el-button>
+        </div>
+      </div>
 
-    <div class="table-wrap">
-      <el-table :data="tableData" stripe style="width: 100%;">
-        <el-table-column prop="id" label="ID" width="90" />
-        <el-table-column prop="date" label="日期" width="140" />
-        <el-table-column prop="version" label="版本号" min-width="180" />
+      <div class="page-stat-grid">
+        <article class="page-stat-card">
+          <span class="page-stat-card__label">当前生效版本</span>
+          <strong class="page-stat-card__value">{{ currentVersionText }}</strong>
+          <span class="page-stat-card__hint">{{ currentVersionDate }}</span>
+        </article>
 
-        <el-table-column label="状态" width="120">
-          <template #default="scope">
-            <el-tag v-if="scope.row.current" type="success">当前</el-tag>
-            <el-tag v-else type="info">-</el-tag>
-          </template>
-        </el-table-column>
+        <article class="page-stat-card">
+          <span class="page-stat-card__label">版本总数</span>
+          <strong class="page-stat-card__value">{{ tableData.length }}</strong>
+          <span class="page-stat-card__hint">当前已收录 {{ tableData.length }} 个日志版本。</span>
+        </article>
 
-        <el-table-column label="操作" width="280">
-          <template #default="scope">
-            <div class="row-actions">
-              <el-button
-                size="small"
-                type="primary"
-                v-if="!scope.row.current"
-                @click="setCurrent(scope.row)"
-              >
-                设为当前
-              </el-button>
-              <el-button size="small" type="primary" @click="openEditDialog(scope.row)">编辑</el-button>
-              <el-button size="small" type="danger" @click="removeLogVersion(scope.row)">删除</el-button>
-            </div>
-          </template>
-        </el-table-column>
-      </el-table>
-    </div>
+        <article class="page-stat-card">
+          <span class="page-stat-card__label">筛选状态</span>
+          <strong class="page-stat-card__value logs-stat-text">{{ keywordState }}</strong>
+          <span class="page-stat-card__hint">支持按版本号快速检索。</span>
+        </article>
+      </div>
+    </section>
+
+    <section class="page-card">
+      <div class="section-head">
+        <div class="section-head__copy">
+          <h3 class="section-head__title">版本列表</h3>
+          <p class="section-head__desc">可以切换当前版本、编辑变更内容，或删除旧版本记录。</p>
+        </div>
+      </div>
+
+      <div class="table-shell">
+        <div class="table-wrap">
+          <el-table :data="tableData" stripe style="width: 100%" empty-text="暂无日志版本">
+            <el-table-column prop="id" label="ID" width="90" />
+            <el-table-column prop="date" label="日期" width="140" />
+            <el-table-column prop="version" label="版本号" min-width="180" />
+            <el-table-column label="状态" width="120">
+              <template #default="scope">
+                <el-tag v-if="scope.row.current" type="success">当前</el-tag>
+                <el-tag v-else type="info">历史</el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column label="操作" width="280" fixed="right">
+              <template #default="scope">
+                <div class="row-actions">
+                  <el-button
+                    v-if="!scope.row.current"
+                    size="small"
+                    type="primary"
+                    @click="setCurrent(scope.row)"
+                  >
+                    设为当前
+                  </el-button>
+                  <el-button size="small" type="primary" @click="openEditDialog(scope.row)">编辑</el-button>
+                  <el-button size="small" type="danger" @click="removeLogVersion(scope.row)">删除</el-button>
+                </div>
+              </template>
+            </el-table-column>
+          </el-table>
+        </div>
+      </div>
+    </section>
 
     <el-dialog :title="isEdit ? '编辑日志版本' : '新增日志版本'" v-model="dialogVisible" width="760px">
       <el-form :model="form" label-width="110px">
@@ -71,7 +100,7 @@
         <el-form-item label="变更内容">
           <el-input
             v-model="form.changesText"
-            placeholder="一行一个变更内容"
+            placeholder="一行一条变更内容"
             type="textarea"
             :rows="6"
           />
@@ -110,6 +139,17 @@ export default {
         date: '',
         changesText: ''
       }
+    }
+  },
+  computed: {
+    currentVersionText() {
+      return this.currentVersion?.version || '暂无'
+    },
+    currentVersionDate() {
+      return this.currentVersion?.date ? `发布日期 ${this.currentVersion.date}` : '还没有设置当前生效版本'
+    },
+    keywordState() {
+      return this.keyword?.trim() ? '筛选中' : '全部版本'
     }
   },
   mounted() {
@@ -158,7 +198,7 @@ export default {
       }
       const changes = this.normalizeChanges()
       if (!changes.length) {
-        this.$message.warning('请至少填写一个变更内容')
+        this.$message.warning('请至少填写一条变更内容')
         return
       }
 
@@ -215,32 +255,7 @@ export default {
 </script>
 
 <style scoped>
-.logs-manage-page {
-  padding: 16px;
-}
-
-.current-info {
-  margin: 12px 0;
-  padding: 10px 12px;
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.98), rgba(247, 239, 228, 0.98));
-  border: 1px solid var(--admin-border);
-  border-radius: 14px;
-}
-
-.current-label {
-  font-weight: 600;
-  margin-right: 8px;
-  color: var(--admin-text);
-}
-
-.row-actions {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.table-wrap {
-  margin-top: 12px;
+.logs-stat-text {
+  font-size: 20px;
 }
 </style>
-

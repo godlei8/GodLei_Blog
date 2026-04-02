@@ -116,12 +116,6 @@
           </div>
         </div>
       </div>
-
-      <div v-if="!isLoading && !loadError" class="archive-footer">
-        <a class="archive-footer__link" href="https://blog.godlei.cn/archives" target="_blank" rel="noopener">
-          想看旧站归档？点这里
-        </a>
-      </div>
     </div>
   </div>
 </template>

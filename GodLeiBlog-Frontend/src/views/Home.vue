@@ -104,9 +104,8 @@ export default {
       revealedRowKeys: [],
       cardObserver: null,
       resizeTimer: null,
+      loaderFallbackTimer: null,
       showLoader: true,
-      bootAnimationFinished: false,
-      contentReady: false,
       homeInitialized: false
     }
   },
@@ -130,23 +129,12 @@ export default {
       return this.siteConfig.home.noticeLines?.length ? this.siteConfig.home.noticeLines : getDefaultSiteConfig().home.noticeLines
     }
   },
-  async mounted() {
-    try {
-      const [siteConfig] = await Promise.all([
-        loadSiteConfig(true),
-        this.loadPosts()
-      ])
-      this.siteConfig = siteConfig
-      this.applyHomeBackground()
-    } finally {
-      this.contentReady = true
-      if (this.bootAnimationFinished) {
-        this.showLoader = false
-        this.$nextTick(() => {
-          this.initializeHomeView()
-        })
-      }
-    }
+  mounted() {
+    this.applyHomeBackground()
+    this.loadInitialData()
+    this.loaderFallbackTimer = setTimeout(() => {
+      this.finishLoader()
+    }, 2200)
     window.addEventListener('focus', this.handleWindowFocus)
     document.addEventListener('visibilitychange', this.handleVisibilityChange)
   },
@@ -163,8 +151,37 @@ export default {
       clearTimeout(this.resizeTimer)
       this.resizeTimer = null
     }
+    if (this.loaderFallbackTimer) {
+      clearTimeout(this.loaderFallbackTimer)
+      this.loaderFallbackTimer = null
+    }
   },
   methods: {
+    async loadInitialData() {
+      const [siteConfigResult] = await Promise.allSettled([
+        loadSiteConfig(true),
+        this.loadPosts()
+      ])
+
+      if (siteConfigResult.status === 'fulfilled') {
+        this.siteConfig = siteConfigResult.value
+      } else {
+        console.error('加载站点配置失败:', siteConfigResult.reason)
+      }
+
+      this.applyHomeBackground()
+    },
+    finishLoader() {
+      if (!this.showLoader) return
+      this.showLoader = false
+      if (this.loaderFallbackTimer) {
+        clearTimeout(this.loaderFallbackTimer)
+        this.loaderFallbackTimer = null
+      }
+      this.$nextTick(() => {
+        this.initializeHomeView()
+      })
+    },
     async refreshSiteConfig(force = false) {
       const previousPrefix = this.siteConfig.home?.welcomePrefix
       const previousHighlight = this.siteConfig.home?.welcomeHighlight
@@ -189,13 +206,7 @@ export default {
       })
     },
     onAnimationFinished() {
-      this.bootAnimationFinished = true
-      if (this.contentReady) {
-        this.showLoader = false
-        this.$nextTick(() => {
-          this.initializeHomeView()
-        })
-      }
+      this.finishLoader()
     },
     initializeHomeView() {
       if (this.homeInitialized) return
