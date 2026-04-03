@@ -72,6 +72,13 @@ function normalizeText(value, fallback = '') {
   return normalized || fallback
 }
 
+function normalizeOptionalText(value, fallback = '') {
+  if (value === null || value === undefined) {
+    return fallback
+  }
+  return typeof value === 'string' ? value.trim() : ''
+}
+
 function normalizeMediaValue(value, fallback = '') {
   return normalizeMediaUrl(normalizeText(value, fallback))
 }
@@ -123,10 +130,10 @@ export function mergeSiteConfig(raw = {}) {
       enabled: normalizeBoolean(source.assistant?.enabled, defaultConfig.assistant.enabled),
       name: normalizeText(source.assistant?.name, defaultConfig.assistant.name),
       subtitle: normalizeText(source.assistant?.subtitle, defaultConfig.assistant.subtitle),
-      welcomeMessage: normalizeText(source.assistant?.welcomeMessage, defaultConfig.assistant.welcomeMessage),
+      welcomeMessage: normalizeOptionalText(source.assistant?.welcomeMessage, defaultConfig.assistant.welcomeMessage),
       systemPrompt: normalizeText(source.assistant?.systemPrompt, defaultConfig.assistant.systemPrompt),
       starterPrompts: normalizeStringList(source.assistant?.starterPrompts, defaultConfig.assistant.starterPrompts),
-      disclaimer: normalizeText(source.assistant?.disclaimer, defaultConfig.assistant.disclaimer)
+      disclaimer: normalizeOptionalText(source.assistant?.disclaimer, defaultConfig.assistant.disclaimer)
     }
   }
 }

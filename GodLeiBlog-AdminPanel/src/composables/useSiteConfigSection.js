@@ -28,6 +28,13 @@ function normalizeText(value, fallback = '') {
   return normalized || fallback
 }
 
+function normalizeOptionalText(value, fallback = '') {
+  if (value === null || value === undefined) {
+    return fallback
+  }
+  return typeof value === 'string' ? value.trim() : ''
+}
+
 function normalizeBoolean(value, fallback = false) {
   return typeof value === 'boolean' ? value : fallback
 }
@@ -114,10 +121,10 @@ function mergeConfig(source = {}) {
       enabled: normalizeBoolean(source.assistant?.enabled, defaults.assistant.enabled),
       name: normalizeText(source.assistant?.name, defaults.assistant.name),
       subtitle: normalizeText(source.assistant?.subtitle, defaults.assistant.subtitle),
-      welcomeMessage: normalizeText(source.assistant?.welcomeMessage, defaults.assistant.welcomeMessage),
+      welcomeMessage: normalizeOptionalText(source.assistant?.welcomeMessage, defaults.assistant.welcomeMessage),
       systemPrompt: normalizeText(source.assistant?.systemPrompt, defaults.assistant.systemPrompt),
       starterPrompts: normalizeTextList(source.assistant?.starterPrompts || defaults.assistant.starterPrompts),
-      disclaimer: normalizeText(source.assistant?.disclaimer, defaults.assistant.disclaimer)
+      disclaimer: normalizeOptionalText(source.assistant?.disclaimer, defaults.assistant.disclaimer)
     }
   }
 }
@@ -223,9 +230,11 @@ export function useSiteConfigSection(sectionKey) {
       notifyFrontendConfigUpdated()
       syncSnapshot()
       ElMessage.success(`${SECTION_LABELS[sectionKey] || '站点配置'}已保存`)
+      return true
     } catch (error) {
       console.error('保存站点配置失败', error)
       ElMessage.error(error.message || '保存站点配置失败')
+      return false
     } finally {
       saving.value = false
     }

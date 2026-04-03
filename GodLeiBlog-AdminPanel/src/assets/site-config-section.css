@@ -236,6 +236,13 @@
   justify-content: start;
 }
 
+.settings-array__empty {
+  margin: 10px 2px 0;
+  color: var(--admin-text-muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
 .settings-array__list--compact {
   gap: 8px;
   margin-top: 10px;
@@ -452,6 +459,13 @@
 .settings-preview__markdown--muted {
   color: var(--admin-text-muted);
   font-size: 13px;
+}
+
+.settings-preview__empty {
+  margin: 0;
+  color: var(--admin-text-muted);
+  font-size: 13px;
+  line-height: 1.7;
 }
 
 .settings-preview__markdown p {

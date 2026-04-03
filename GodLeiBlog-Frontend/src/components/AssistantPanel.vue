@@ -98,13 +98,28 @@
         </header>
 
         <div ref="messagesRef" class="assistant-panel__messages" @wheel.prevent="handleMessagesWheel">
-          <div v-if="!messages.length" class="assistant-empty">
-            <div class="assistant-empty__intro">
-              <div class="assistant-empty__welcome assistant-markdown" v-html="welcomeHtml"></div>
-              <div class="assistant-empty__disclaimer assistant-markdown" v-html="disclaimerHtml"></div>
+          <div
+            v-if="!messages.length"
+            class="assistant-empty"
+            :class="{
+              'is-single': emptyStateSectionCount === 1,
+              'is-double': emptyStateSectionCount === 2,
+            }"
+          >
+            <div v-if="hasWelcomeContent || hasDisclaimerContent" class="assistant-empty__intro">
+              <div
+                v-if="hasWelcomeContent"
+                class="assistant-empty__welcome assistant-empty__card assistant-markdown"
+                v-html="welcomeHtml"
+              ></div>
+              <div
+                v-if="hasDisclaimerContent"
+                class="assistant-empty__disclaimer assistant-empty__card assistant-markdown"
+                v-html="disclaimerHtml"
+              ></div>
             </div>
 
-            <div v-if="starterPrompts.length" class="assistant-empty__starter-group">
+            <div v-if="hasStarterPrompts" class="assistant-empty__starter-group assistant-empty__card">
               <span class="assistant-empty__label">可以这样问我</span>
 
               <div class="assistant-empty__starters">
@@ -118,24 +133,69 @@
                 </button>
               </div>
             </div>
+
+            <div v-if="!hasEmptyStateContent" class="assistant-empty__fallback assistant-empty__card">
+              <strong>{{ assistantName }}</strong>
+              <p>直接向我提问，我会结合当前页面内容帮你梳理重点。</p>
+            </div>
           </div>
 
           <article
             v-for="message in messages"
             :key="message.id"
             class="assistant-message"
-            :class="`is-${message.role}`"
+            :class="[
+              `is-${message.role}`,
+              {
+                'is-pending': message.pending,
+              },
+            ]"
           >
             <div class="assistant-message__meta">
               <strong>{{ message.role === 'user' ? '我' : assistantName }}</strong>
-              <span v-if="message.pending">正在回复...</span>
+              <span v-if="message.pending" class="assistant-message__meta-status">
+                <span class="assistant-message__meta-status-icon" aria-hidden="true">
+                  <svg viewBox="0 0 18 18" role="presentation" focusable="false">
+                    <path d="M9 3.2C6.13 3.2 3.8 5.53 3.8 8.4C3.8 10.17 4.68 11.74 6.04 12.69C6.51 13.01 6.78 13.56 6.78 14.13V14.4C6.78 14.84 7.14 15.2 7.58 15.2H10.42C10.86 15.2 11.22 14.84 11.22 14.4V14.13C11.22 13.56 11.49 13.01 11.96 12.69C13.32 11.74 14.2 10.17 14.2 8.4C14.2 5.53 11.87 3.2 9 3.2Z" />
+                    <path d="M7.22 15.2H10.78C10.78 16.07 10.08 16.78 9.2 16.78H8.8C7.92 16.78 7.22 16.07 7.22 15.2Z" />
+                    <path d="M6.65 2.32L5.92 1.48" />
+                    <path d="M11.35 2.32L12.08 1.48" />
+                    <path d="M4.4 4.55L3.36 4.08" />
+                    <path d="M13.6 4.55L14.64 4.08" />
+                  </svg>
+                </span>
+                <span>思考中</span>
+              </span>
             </div>
 
             <div
-              v-if="message.role === 'assistant'"
-              class="assistant-message__body assistant-markdown"
-              v-html="message.html"
-            ></div>
+              v-if="message.role === 'assistant' && message.pending && !message.content"
+              class="assistant-message__body assistant-message__body--pending"
+            >
+              <span class="assistant-message__typing" aria-hidden="true">
+                <span></span>
+                <span></span>
+                <span></span>
+              </span>
+              <div class="assistant-message__pending-copy" aria-hidden="true">
+                <span class="assistant-message__pending-line assistant-message__pending-line--long" aria-hidden="true"></span>
+                <span class="assistant-message__pending-line assistant-message__pending-line--short" aria-hidden="true"></span>
+              </div>
+            </div>
+
+            <div
+              v-else-if="message.role === 'assistant'"
+              class="assistant-message__assistant-stack"
+            >
+              <div
+                class="assistant-message__body assistant-markdown"
+                :class="{ 'assistant-message__body--streaming': message.pending }"
+                v-html="message.html"
+              ></div>
+              <div v-if="message.pending" class="assistant-message__streaming-indicator" aria-hidden="true">
+                <span class="assistant-message__streaming-pulse" aria-hidden="true"></span>
+              </div>
+            </div>
             <p v-else class="assistant-message__plain">{{ message.content }}</p>
           </article>
         </div>
@@ -181,6 +241,7 @@ import xml from 'highlight.js/lib/languages/xml'
 import yaml from 'highlight.js/lib/languages/yaml'
 import 'highlight.js/styles/github-dark.css'
 import { bindImageFallback, coverFallbackUrl, resolveImageUrl } from '@/utils/image'
+import { resolveApiUrl } from '@/utils/apiBase'
 import { pageContextState } from '@/utils/pageContext'
 import { getDefaultSiteConfig, loadSiteConfig } from '@/utils/siteConfig'
 
@@ -188,6 +249,7 @@ const STORAGE_KEY = 'godlei-assistant-session'
 const FLOATING_KEY = 'godlei-assistant-floating'
 const DESKTOP_TRIGGER_SIZE = 72
 const MOBILE_TRIGGER_SIZE = 62
+const EMPTY_REPLY_FALLBACK = '刚刚这条回复没有成功生成，你可以再问我一次。'
 const renderTimers = new Map()
 
 ;[
@@ -259,8 +321,17 @@ const assistantEnabled = computed(() => siteConfig.value.assistant?.enabled !== 
 const assistantName = computed(() => siteConfig.value.assistant?.name || '馨宝')
 const assistantSubtitle = computed(() => siteConfig.value.assistant?.subtitle || '站内 AI 助手')
 const starterPrompts = computed(() => siteConfig.value.assistant?.starterPrompts || [])
-const welcomeHtml = computed(() => renderMarkdown(siteConfig.value.assistant?.welcomeMessage || ''))
-const disclaimerHtml = computed(() => renderMarkdown(siteConfig.value.assistant?.disclaimer || ''))
+const welcomeContent = computed(() => String(siteConfig.value.assistant?.welcomeMessage ?? '').trim())
+const disclaimerContent = computed(() => String(siteConfig.value.assistant?.disclaimer ?? '').trim())
+const hasStarterPrompts = computed(() => starterPrompts.value.length > 0)
+const hasWelcomeContent = computed(() => Boolean(welcomeContent.value))
+const hasDisclaimerContent = computed(() => Boolean(disclaimerContent.value))
+const hasEmptyStateContent = computed(() => hasWelcomeContent.value || hasDisclaimerContent.value || hasStarterPrompts.value)
+const emptyStateSectionCount = computed(() => {
+  return Number(hasWelcomeContent.value) + Number(hasDisclaimerContent.value) + Number(hasStarterPrompts.value)
+})
+const welcomeHtml = computed(() => renderMarkdown(welcomeContent.value))
+const disclaimerHtml = computed(() => renderMarkdown(disclaimerContent.value))
 const dragging = computed(() => dragState.active)
 const shouldShowIdleIntro = computed(() => showIdleIntro.value && !open.value && !isMobile.value)
 const idleIntroText = computed(() => `我是${assistantName.value}，会帮你找内容、答问题，也能陪你理理思路。`)
@@ -301,6 +372,13 @@ function createMessage(role, content = '') {
     html: role === 'assistant' ? renderMarkdown(content) : '',
     pending: false,
   })
+}
+
+function ensureAssistantMessageContent(message, fallback = EMPTY_REPLY_FALLBACK) {
+  if (!message) return false
+  if (String(message.content || '').trim()) return false
+  message.content = fallback
+  return true
 }
 
 function createMarkdownRenderer() {
@@ -755,7 +833,7 @@ async function submitMessage(preset = '') {
   requestController.value = controller
 
   try {
-    const response = await fetch('/api/assistant/chat/stream', {
+    const response = await fetch(resolveApiUrl('/assistant/chat/stream'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -777,7 +855,6 @@ async function submitMessage(preset = '') {
         const chunk = typeof payload === 'string' ? payload : payload?.content || ''
         if (!chunk) return
         assistantMessage.content += chunk
-        assistantMessage.pending = false
         scheduleRender(assistantMessage)
       },
       error: (payload) => {
@@ -791,6 +868,7 @@ async function submitMessage(preset = '') {
       },
       done: () => {
         assistantMessage.pending = false
+        ensureAssistantMessageContent(assistantMessage)
         flushRender(assistantMessage)
       },
     })
@@ -806,6 +884,7 @@ async function submitMessage(preset = '') {
     }
   } finally {
     assistantMessage.pending = false
+    ensureAssistantMessageContent(assistantMessage)
     flushRender(assistantMessage)
     requestController.value = null
     submitting.value = false
@@ -1477,7 +1556,9 @@ onBeforeUnmount(() => {
   padding-top: 16px;
   padding-bottom: 16px;
   display: grid;
-  gap: 14px;
+  align-content: start;
+  grid-auto-rows: max-content;
+  gap: 10px;
   background:
     linear-gradient(180deg, rgba(246, 231, 198, 0.04), rgba(246, 231, 198, 0.015) 12%, rgba(214, 173, 92, 0.04) 100%);
   scrollbar-width: thin;
@@ -1491,19 +1572,36 @@ onBeforeUnmount(() => {
 }
 
 .assistant-empty {
-  gap: 14px;
+  gap: 12px;
+  align-content: start;
+  justify-items: start;
   padding-bottom: 4px;
 }
 
 .assistant-empty__intro,
-.assistant-empty__starter-group {
+.assistant-empty__starter-group,
+.assistant-empty__fallback {
   display: grid;
+  gap: 10px;
+  justify-items: start;
+}
+
+.assistant-empty__card {
+  width: fit-content;
+  max-width: 100%;
+}
+
+.assistant-empty.is-single {
   gap: 10px;
 }
 
+.assistant-empty.is-double .assistant-empty__intro {
+  gap: 8px;
+}
+
 .assistant-empty__starter-group {
-  padding: 16px;
-  border-radius: 20px;
+  padding: 13px 14px;
+  border-radius: 18px;
   border: 1px solid rgba(214, 173, 92, 0.12);
   background:
     linear-gradient(180deg, rgba(246, 231, 198, 0.04), rgba(246, 231, 198, 0.015)),
@@ -1520,6 +1618,7 @@ onBeforeUnmount(() => {
 
 .assistant-message {
   gap: 10px;
+  animation: assistant-message-rise 0.3s cubic-bezier(0.18, 0.88, 0.22, 1) both;
 }
 
 .assistant-message.is-user {
@@ -1539,14 +1638,59 @@ onBeforeUnmount(() => {
   justify-content: flex-end;
 }
 
+.assistant-message__meta-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: rgba(214, 173, 92, 0.74);
+  letter-spacing: 0.02em;
+}
+
+.assistant-message__meta-status-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  color: rgba(231, 199, 119, 0.92);
+  filter: drop-shadow(0 0 10px rgba(214, 173, 92, 0.14));
+  animation: assistant-thinking-glow 1.8s ease-in-out infinite;
+}
+
+.assistant-message__meta-status-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.assistant-message__meta-status-icon svg path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.assistant-message__assistant-stack {
+  display: grid;
+  justify-items: start;
+  gap: 8px;
+  justify-self: start;
+  align-self: start;
+  width: auto;
+  max-width: min(88%, 360px);
+}
+
 .assistant-message__plain,
 .assistant-message__body {
-  width: fit-content;
-  max-width: 92%;
+  justify-self: start;
+  align-self: start;
+  width: auto;
+  min-width: 0;
+  max-width: min(88%, 360px);
   margin: 0;
-  padding: 14px 16px;
+  padding: 12px 15px;
   border-radius: 22px;
-  line-height: 1.78;
+  line-height: 1.68;
   box-shadow: 0 16px 28px rgba(8, 2, 4, 0.18);
 }
 
@@ -1555,14 +1699,120 @@ onBeforeUnmount(() => {
   border: 1px solid rgba(214, 173, 92, 0.14);
   color: var(--theme-accent-text-strong);
   white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.assistant-message.is-user .assistant-message__plain {
+  justify-self: end;
 }
 
 .assistant-message__body {
+  position: relative;
+  overflow: hidden;
   background:
     linear-gradient(180deg, rgba(255, 247, 234, 0.03), rgba(255, 247, 234, 0.015)),
     rgba(21, 8, 12, 0.72);
   border: 1px solid rgba(214, 173, 92, 0.1);
   color: rgba(255, 247, 234, 0.92);
+  transition:
+    border-color 0.24s ease,
+    background 0.24s ease,
+    box-shadow 0.24s ease;
+}
+
+.assistant-message__body--pending {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+  max-width: 248px;
+  padding: 12px 14px;
+  background:
+    linear-gradient(180deg, rgba(255, 247, 234, 0.04), rgba(255, 247, 234, 0.015)),
+    rgba(18, 7, 11, 0.82);
+}
+
+.assistant-message__body--pending::after,
+.assistant-message__body--streaming::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 18%, rgba(255, 243, 219, 0.05) 38%, rgba(214, 173, 92, 0.18) 50%, rgba(255, 243, 219, 0.05) 62%, transparent 82%);
+  transform: translateX(-120%);
+  animation: assistant-stream-shimmer 2.3s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.assistant-message__body--streaming {
+  border-color: rgba(214, 173, 92, 0.16);
+  box-shadow:
+    0 16px 28px rgba(8, 2, 4, 0.18),
+    0 0 0 1px rgba(214, 173, 92, 0.04);
+}
+
+.assistant-message__typing {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding-top: 4px;
+}
+
+.assistant-message__typing span {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: rgba(214, 173, 92, 0.8);
+  animation: assistant-typing-bounce 1.1s ease-in-out infinite;
+}
+
+.assistant-message__typing span:nth-child(2) {
+  animation-delay: 0.14s;
+}
+
+.assistant-message__typing span:nth-child(3) {
+  animation-delay: 0.28s;
+}
+
+.assistant-message__pending-copy {
+  display: grid;
+  gap: 7px;
+  min-width: 84px;
+  padding-top: 2px;
+}
+
+.assistant-message__pending-line {
+  display: block;
+  height: 6px;
+  border-radius: 999px;
+  background:
+    linear-gradient(90deg, rgba(255, 247, 234, 0.04), rgba(214, 173, 92, 0.26), rgba(255, 247, 234, 0.04));
+  background-size: 220% 100%;
+  animation: assistant-skeleton-wave 1.7s ease-in-out infinite;
+}
+
+.assistant-message__pending-line--long {
+  width: 96px;
+}
+
+.assistant-message__pending-line--short {
+  width: 64px;
+  animation-delay: 0.18s;
+}
+
+.assistant-message__streaming-indicator {
+  display: inline-flex;
+  align-items: center;
+  padding-left: 8px;
+}
+
+.assistant-message__streaming-pulse {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(214, 173, 92, 0.82);
+  box-shadow: 0 0 0 0 rgba(214, 173, 92, 0.4);
+  animation: assistant-stream-pulse 1.35s ease-out infinite;
 }
 
 .assistant-panel__composer {
@@ -1626,9 +1876,10 @@ onBeforeUnmount(() => {
 }
 
 .assistant-empty__welcome,
-.assistant-empty__disclaimer {
-  padding: 14px 16px;
-  border-radius: 20px;
+.assistant-empty__disclaimer,
+.assistant-empty__fallback {
+  padding: 12px 14px;
+  border-radius: 18px;
   border: 1px solid rgba(214, 173, 92, 0.12);
   background:
     linear-gradient(180deg, rgba(255, 247, 234, 0.04), rgba(255, 247, 234, 0.015)),
@@ -1649,6 +1900,16 @@ onBeforeUnmount(() => {
 .assistant-empty__disclaimer {
   color: rgba(246, 231, 198, 0.64);
   font-size: 12px;
+}
+
+.assistant-empty__fallback {
+  gap: 6px;
+  color: rgba(255, 247, 234, 0.78);
+}
+
+.assistant-empty__fallback strong,
+.assistant-empty__fallback p {
+  margin: 0;
 }
 
 .assistant-empty__starters {
@@ -1692,6 +1953,10 @@ onBeforeUnmount(() => {
 .assistant-markdown :deep(ol),
 .assistant-markdown :deep(table) {
   margin: 0 0 14px;
+}
+
+.assistant-markdown :deep(*:last-child) {
+  margin-bottom: 0;
 }
 
 .assistant-markdown :deep(blockquote) {
@@ -1865,6 +2130,86 @@ onBeforeUnmount(() => {
   }
 }
 
+@keyframes assistant-message-rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes assistant-typing-bounce {
+  0%,
+  80%,
+  100% {
+    opacity: 0.38;
+    transform: translateY(0) scale(0.92);
+  }
+
+  40% {
+    opacity: 1;
+    transform: translateY(-2px) scale(1);
+  }
+}
+
+@keyframes assistant-stream-shimmer {
+  0% {
+    transform: translateX(-120%);
+  }
+
+  55%,
+  100% {
+    transform: translateX(120%);
+  }
+}
+
+@keyframes assistant-skeleton-wave {
+  0%,
+  100% {
+    background-position: 100% 50%;
+    opacity: 0.62;
+  }
+
+  50% {
+    background-position: 0% 50%;
+    opacity: 1;
+  }
+}
+
+@keyframes assistant-stream-pulse {
+  0% {
+    transform: scale(0.92);
+    box-shadow: 0 0 0 0 rgba(214, 173, 92, 0.38);
+  }
+
+  60% {
+    transform: scale(1);
+    box-shadow: 0 0 0 8px rgba(214, 173, 92, 0);
+  }
+
+  100% {
+    transform: scale(0.92);
+    box-shadow: 0 0 0 0 rgba(214, 173, 92, 0);
+  }
+}
+
+@keyframes assistant-thinking-glow {
+  0%,
+  100% {
+    opacity: 0.72;
+    transform: translateY(0) scale(0.96);
+  }
+
+  50% {
+    opacity: 1;
+    transform: translateY(-1px) scale(1);
+  }
+}
+
 @keyframes assistant-orb-pulse {
   0%,
   100% {
@@ -2032,7 +2377,14 @@ onBeforeUnmount(() => {
   .assistant-trigger__glow--inner,
   .assistant-trigger__ring--one,
   .assistant-trigger__ring--two,
-  .assistant-trigger__core {
+  .assistant-trigger__core,
+  .assistant-message__meta-status-icon,
+  .assistant-message,
+  .assistant-message__typing span,
+  .assistant-message__pending-line,
+  .assistant-message__streaming-pulse,
+  .assistant-message__body--pending::after,
+  .assistant-message__body--streaming::after {
     animation: none !important;
   }
 }

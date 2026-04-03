@@ -121,6 +121,7 @@
             <el-button type="danger" plain @click="removeTextItem(form.assistant.starterPrompts, index)">删除</el-button>
           </div>
         </div>
+        <p v-if="!hasStarterPrompts" class="settings-array__empty">已清空起手提示，保存后前台将不再展示快捷提问入口。</p>
       </div>
     </section>
 
@@ -167,11 +168,16 @@
             <strong>{{ form.assistant.name || '馨宝' }}</strong>
             <span>{{ form.assistant.enabled ? '已启用' : '已关闭' }}</span>
           </div>
-          <div class="settings-preview__markdown" v-html="renderMarkdown(form.assistant.welcomeMessage)"></div>
-          <div class="settings-preview__starter-list">
+          <div v-if="hasWelcomeMessage" class="settings-preview__markdown" v-html="renderMarkdown(form.assistant.welcomeMessage)"></div>
+          <div v-if="hasStarterPrompts" class="settings-preview__starter-list">
             <span v-for="prompt in form.assistant.starterPrompts.slice(0, 3)" :key="prompt">{{ prompt }}</span>
           </div>
-          <div class="settings-preview__markdown settings-preview__markdown--muted" v-html="renderMarkdown(form.assistant.disclaimer)"></div>
+          <div
+            v-if="hasDisclaimer"
+            class="settings-preview__markdown settings-preview__markdown--muted"
+            v-html="renderMarkdown(form.assistant.disclaimer)"
+          ></div>
+          <p v-if="!hasAssistantPreviewContent" class="settings-preview__empty">当前已清空空状态文案，前台将直接展示对话区。</p>
         </div>
       </div>
     </template>
@@ -216,6 +222,10 @@ const runtimeStatus = ref({
 
 const pageSaving = computed(() => saving.value || savingApiKey.value)
 const hasPendingApiKey = computed(() => Boolean(String(assistantApiKey.value || '').trim()))
+const hasWelcomeMessage = computed(() => Boolean(String(form.assistant.welcomeMessage || '').trim()))
+const hasDisclaimer = computed(() => Boolean(String(form.assistant.disclaimer || '').trim()))
+const hasStarterPrompts = computed(() => form.assistant.starterPrompts.length > 0)
+const hasAssistantPreviewContent = computed(() => hasWelcomeMessage.value || hasDisclaimer.value || hasStarterPrompts.value)
 const apiKeySourceText = computed(() => {
   if (runtimeStatus.value.apiKeySource === 'admin') return '后台已保存'
   if (runtimeStatus.value.apiKeySource === 'env') return '环境变量'
@@ -277,7 +287,8 @@ async function clearStoredApiKey() {
 }
 
 async function saveAll() {
-  await saveSection()
+  const saved = await saveSection()
+  if (!saved) return
   if (hasPendingApiKey.value) {
     await persistApiKey({ silentNoop: true })
     return

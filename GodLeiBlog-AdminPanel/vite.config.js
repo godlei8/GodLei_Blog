@@ -8,7 +8,30 @@ import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
+  const apiProxyTarget = env.VITE_API_PROXY_TARGET || 'http://localhost:8080'
+  const uploadProxyTarget = env.VITE_UPLOAD_PROXY_TARGET || apiProxyTarget
   const twikooProxyTarget = env.VITE_TWIKOO_PROXY_TARGET || 'http://localhost:3000'
+
+  const proxy = {
+    '/api': {
+      target: apiProxyTarget,
+      changeOrigin: true,
+      rewrite: (path) => path.replace(/^\/api/, '')
+    },
+    '/uploads': {
+      target: uploadProxyTarget,
+      changeOrigin: true
+    },
+    '/twikoo-proxy': {
+      target: twikooProxyTarget,
+      changeOrigin: true,
+      secure: false,
+      rewrite: (path) => {
+        const p = path.replace(/^\/twikoo-proxy/, '')
+        return p || '/'
+      }
+    }
+  }
 
   return {
     // 部署在 Nginx 子路径 /admin/ 时使用；本地 dev 不受影响
@@ -27,27 +50,10 @@ export default defineConfig(({ mode }) => {
     },
     server: {
       port: 5173,
-      proxy: {
-        '/api': {
-          target: 'http://localhost:8080',
-          changeOrigin: true,
-          rewrite: (path) => path.replace(/^\/api/, '')
-        },
-        '/uploads': {
-          target: 'http://localhost:8080',
-          changeOrigin: true
-        },
-        '/twikoo-proxy': {
-          target: twikooProxyTarget,
-          changeOrigin: true,
-          // 某些历史目标证书与域名不完全匹配，开发环境放宽 TLS 校验。
-          secure: false,
-          rewrite: (path) => {
-            const p = path.replace(/^\/twikoo-proxy/, '')
-            return p || '/'
-          }
-        }
-      }
+      proxy
+    },
+    preview: {
+      proxy
     }
   }
 })

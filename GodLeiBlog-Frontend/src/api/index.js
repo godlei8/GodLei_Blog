@@ -1,10 +1,11 @@
 // src/api/index.js
 import axios from 'axios';
+import { getApiBaseUrl } from '@/utils/apiBase'
 
 // 后端地址：
 // - 生产/手机访问：默认同域（由 nginx/网关反代到后端），避免写死 localhost 导致移动端请求失败
 // - 开发环境：可用 VITE_API_BASE_URL 覆盖，或使用 vite proxy（见 vite.config.js）
-const BASE_URL = (import.meta && import.meta.env && import.meta.env.VITE_API_BASE_URL) ? import.meta.env.VITE_API_BASE_URL : '/';
+const BASE_URL = getApiBaseUrl()
 
 
 // 创建 axios 实例
@@ -32,11 +33,11 @@ export const request = async (method, url, data = null) => {
 };
 
 // 封装具体的 API 接口
-// 后端统一前缀：/api
-export const fetchLogs = () => request('GET', '/api/logs');
-export const createLog = (logData) => request('POST', '/api/logs', logData);
-export const updateLog = (id, logData) => request('PUT', `/api/logs/${id}`, logData);
-export const deleteLog = (id) => request('DELETE', `/api/logs/${id}`);
+// 注意：baseURL 已包含 /api 前缀，这里不需要再加
+export const fetchLogs = () => request('GET', '/logs');
+export const createLog = (logData) => request('POST', '/logs', logData);
+export const updateLog = (id, logData) => request('PUT', `/logs/${id}`, logData);
+export const deleteLog = (id) => request('DELETE', `/logs/${id}`);
 
 // 获取文章列表（支持分页）
 export const fetchPosts = (
@@ -51,21 +52,21 @@ export const fetchPosts = (
     orderBy,
     orderType,
   });
-  return request('GET', `/api/post/list?${params.toString()}`);
+  return request('GET', `/post/list?${params.toString()}`);
 };
 
 // 获取单篇文章的 API（调用后端接口）
 export const fetchPostById = (id) => {
-  return request('GET', `/api/post/get?id=${id}`); // 调用后端接口
+  return request('GET', `/post/get?id=${id}`); // 调用后端接口
 };
 
 // 获取站点统计（PV/UV）
-export const fetchSiteStats = () => request('GET', '/api/post/stats');
+export const fetchSiteStats = () => request('GET', '/post/stats');
 
 // 获取友链分组列表（固定原路径）
-export const fetchLinks = () => request('GET', '/api/links/list');
+export const fetchLinks = () => request('GET', '/links/list');
 
-export const fetchSiteConfig = () => request('GET', '/api/site/config');
+export const fetchSiteConfig = () => request('GET', '/site/config');
 
 export const fetchMomentsList = (page = 1, pageSize = 10, status = 1) => {
   const params = new URLSearchParams({
@@ -75,15 +76,15 @@ export const fetchMomentsList = (page = 1, pageSize = 10, status = 1) => {
   if (status !== undefined && status !== null && status !== '') {
     params.set('status', String(status));
   }
-  return request('GET', `/api/moments/list?${params.toString()}`);
+  return request('GET', `/moments/list?${params.toString()}`);
 };
 
-export const fetchMomentById = (id) => request('GET', `/api/moments/get?id=${id}`);
+export const fetchMomentById = (id) => request('GET', `/moments/get?id=${id}`);
 
 // 上报一次访问
 export const trackSiteVisit = (visitorKey, path = '/') => {
   const params = new URLSearchParams({ path });
-  return apiClient.post(`/api/post/stats/track?${params.toString()}`, null, {
+  return apiClient.post(`/post/stats/track?${params.toString()}`, null, {
     headers: {
       'X-Visitor-Key': visitorKey,
     },

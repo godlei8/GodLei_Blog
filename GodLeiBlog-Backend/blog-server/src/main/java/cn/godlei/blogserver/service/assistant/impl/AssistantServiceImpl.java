@@ -46,6 +46,7 @@ public class AssistantServiceImpl implements AssistantService {
     private static final String ASSISTANT_API_KEY_SETTING_KEY = "assistant_api_key";
     private static final String ASSISTANT_API_KEY_SETTING_DESC = "AI 助手 MiniMax API Key（后台配置）";
     private static final String DEFAULT_SYSTEM_PROMPT = "你是 GodLei Blog 的站内 AI 助手“馨宝”。回答时请保持自然、准确、简洁；如果页面上下文不足或事实不确定，要明确说明，不要编造。";
+    private static final String EMPTY_ASSISTANT_REPLY_MESSAGE = "刚刚这条回复没有成功生成，请再问我一次。";
 
     private final ObjectMapper objectMapper;
     private final SiteConfigService siteConfigService;
@@ -287,6 +288,10 @@ public class AssistantServiceImpl implements AssistantService {
                     writeEvent(outputStream, "delta", Map.of("content", appended));
                 }
             }
+        }
+        if (!StringUtils.hasText(contentBuffer)) {
+            writeError(outputStream, EMPTY_ASSISTANT_REPLY_MESSAGE);
+            return;
         }
         writeEvent(outputStream, "done", Map.of("sessionId", sessionId));
     }
