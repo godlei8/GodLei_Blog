@@ -153,6 +153,26 @@ export const updateAssistantApiKey = (data) => {
   return request.put('/admin/assistant/api-key', data)
 }
 
+export const getAssistantRuntime = () => {
+  return request.get('/admin/assistant/runtime')
+}
+
+export const updateAssistantRuntime = (data) => {
+  return request.put('/admin/assistant/runtime', data)
+}
+
+export const testAssistantRuntime = (data) => {
+  return request.post('/admin/assistant/runtime/test', data)
+}
+
+export const getAssistantExperience = () => {
+  return request.get('/admin/assistant/experience')
+}
+
+export const updateAssistantExperience = (data) => {
+  return request.put('/admin/assistant/experience', data)
+}
+
 export const getMomentList = (params) => {
   return request.get('/admin/moments/list', { params })
 }
