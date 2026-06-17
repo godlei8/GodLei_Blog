@@ -3,6 +3,7 @@ package cn.godlei.blogserver.service.postServer;
 import cn.godlei.blogpojo.dto.request.PostBody;
 import cn.godlei.blogpojo.dto.request.PostQueryParam;
 import cn.godlei.blogpojo.dto.response.PageResult;
+import cn.godlei.blogpojo.dto.response.PostDetailVO;
 import cn.godlei.blogpojo.entity.Post;
 
 public interface PostService {
@@ -23,6 +24,14 @@ public interface PostService {
      * @return 文章详情
      */
     Post get(String id);
+
+    /**
+     * 获取文章详情（含结构化分类路径、标签数组与相邻文章），用于前台文章页。
+     *
+     * @param id 文章 ID
+     * @return 文章详情 VO，文章不存在时返回 null
+     */
+    PostDetailVO getDetail(String id);
 
     /**
      * 添加文章

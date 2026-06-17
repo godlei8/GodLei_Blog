@@ -38,6 +38,20 @@
         LIMIT 1
     </select>
 
+    <select id="findById" resultMap="BlogCategoryResult">
+        SELECT
+        id,
+        parent_id,
+        name,
+        description,
+        sort,
+        created_at,
+        updated_at
+        FROM blog_category
+        WHERE id = #{id}
+        LIMIT 1
+    </select>
+
     <insert id="insert" parameterType="cn.godlei.blogpojo.entity.BlogCategory" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO blog_category (parent_id, name, description, sort)
         VALUES (#{parentId}, #{name}, #{description}, #{sort})

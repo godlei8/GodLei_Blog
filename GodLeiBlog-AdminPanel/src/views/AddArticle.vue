@@ -239,6 +239,18 @@ export default {
         if (!this.renderedHtml) {
           this.renderedHtml = this.md.render(this.markdownContent || '')
         }
+
+        // 后端结构化字段优先于 front-matter 解析（保证"编辑所见 = 实际存储"）
+        const backendTags = this.normalizeToArray(post.tags)
+        const backendCategories = this.normalizeToArray(post.categories)
+        if (backendTags.length) {
+          this.parsedFrontMatter.tags = backendTags
+          this.form.tags = backendTags.join(',')
+        }
+        if (backendCategories.length) {
+          this.parsedFrontMatter.categories = backendCategories
+          this.form.category = backendCategories.join(',')
+        }
       } catch (error) {
         console.error('获取文章详情失败:', error)
         this.$message.error('获取文章详情失败，请稍后重试')

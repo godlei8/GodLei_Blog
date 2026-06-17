@@ -4,6 +4,7 @@ package cn.godlei.blogserver.controller.user;
 import cn.godlei.blogcommon.util.Result;
 import cn.godlei.blogpojo.dto.request.PostQueryParam;
 import cn.godlei.blogpojo.dto.response.PageResult;
+import cn.godlei.blogpojo.dto.response.PostDetailVO;
 import cn.godlei.blogpojo.entity.Post;
 import cn.godlei.blogserver.service.postServer.PostService;
 import lombok.extern.slf4j.Slf4j;
@@ -37,12 +38,12 @@ public class PostController {
     }
 
     /**
-     * 根据id获取文章
+     * 根据id获取文章详情（含分类路径、标签数组与相邻文章）
      */
     @GetMapping("/get")
     public Result get(String id) {
         log.info("获取id为{}的文章",id);
-        Post post = postServer.get(id);
+        PostDetailVO post = postServer.getDetail(id);
         return Result.success(post);
     }
 

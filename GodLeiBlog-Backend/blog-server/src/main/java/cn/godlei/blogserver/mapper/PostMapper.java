@@ -2,8 +2,12 @@ package cn.godlei.blogserver.mapper;
 
 import cn.godlei.blogpojo.dto.request.PostBody;
 import cn.godlei.blogpojo.dto.request.PostQueryParam;
+import cn.godlei.blogpojo.dto.response.PostNeighbor;
 import cn.godlei.blogpojo.entity.Post;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -46,4 +50,19 @@ public interface PostMapper {
      * 按标签ID查询文章简要列表
      */
     List<Post> listByTagId(Long tagId);
+
+    /**
+     * 查询某篇文章的标签名列表（JOIN blog_post_tag + blog_tag）。
+     */
+    List<String> listTagNamesByPostId(@Param("postId") String postId);
+
+    /**
+     * 上一篇：比给定发布时间更早、最接近的一篇。
+     */
+    PostNeighbor findPrevByCreateTime(@Param("createTime") LocalDateTime createTime);
+
+    /**
+     * 下一篇：比给定发布时间更晚、最接近的一篇。
+     */
+    PostNeighbor findNextByCreateTime(@Param("createTime") LocalDateTime createTime);
 }

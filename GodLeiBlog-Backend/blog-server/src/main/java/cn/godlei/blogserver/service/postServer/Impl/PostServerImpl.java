@@ -4,6 +4,7 @@ import cn.godlei.blogcommon.util.AbbrlinkUtil;
 import cn.godlei.blogpojo.dto.request.PostBody;
 import cn.godlei.blogpojo.dto.request.PostQueryParam;
 import cn.godlei.blogpojo.dto.response.PageResult;
+import cn.godlei.blogpojo.dto.response.PostDetailVO;
 import cn.godlei.blogpojo.entity.Post;
 import cn.godlei.blogpojo.entity.BlogCategory;
 import cn.godlei.blogpojo.entity.BlogTag;
@@ -78,6 +79,66 @@ public class PostServerImpl implements PostService {
     public Post get(String id) {
         Post post = postMapper.get(id);
         return post;
+    }
+
+    /**
+     * 获取文章详情（含分类路径、标签数组与相邻文章）。
+     *
+     * @param id 文章 ID
+     * @return 文章详情 VO，文章不存在时返回 null
+     */
+    @Override
+    public PostDetailVO getDetail(String id) {
+        Post post = postMapper.get(id);
+        if (post == null) {
+            return null;
+        }
+
+        PostDetailVO vo = new PostDetailVO();
+        vo.setId(post.getId());
+        vo.setTitle(post.getTitle());
+        vo.setContent(post.getContent());
+        vo.setCover(post.getCover());
+        vo.setDescription(post.getDescription());
+        vo.setCreateTime(post.getCreateTime());
+        vo.setUpdateTime(post.getUpdateTime());
+
+        // 分类路径：由 category_id 向上回溯 parent_id 拼出从父到子的层级
+        vo.setCategories(resolveCategoryPath(post.getCategoryId()));
+
+        // 标签：JOIN 关联表取标签名
+        List<String> tags = postMapper.listTagNamesByPostId(id);
+        vo.setTags(tags != null ? tags : new java.util.ArrayList<>());
+
+        // 相邻文章：按发布时间取上一篇/下一篇
+        if (post.getCreateTime() != null) {
+            vo.setPrev(postMapper.findPrevByCreateTime(post.getCreateTime()));
+            vo.setNext(postMapper.findNextByCreateTime(post.getCreateTime()));
+        }
+
+        return vo;
+    }
+
+    /**
+     * 由分类ID向上回溯，拼出从父到子的分类名称路径。
+     *
+     * @param categoryId 叶子分类 ID
+     * @return 分类路径（从父到子），无分类时为空列表
+     */
+    private List<String> resolveCategoryPath(Long categoryId) {
+        List<String> path = new java.util.ArrayList<>();
+        Long current = categoryId;
+        int guard = 0;
+        // guard 防御分类表里出现环导致死循环
+        while (current != null && guard++ < 32) {
+            BlogCategory category = blogCategoryMapper.findById(current);
+            if (category == null) {
+                break;
+            }
+            path.add(0, category.getName());
+            current = category.getParentId();
+        }
+        return path;
     }
 
     /**

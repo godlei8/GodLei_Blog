@@ -12,6 +12,11 @@ public interface BlogCategoryMapper {
     BlogCategory findByParentAndName(@Param("parentId") Long parentId,
                                      @Param("name") String name);
 
+    /**
+     * 按 ID 查询分类（用于回溯分类层级路径）。
+     */
+    BlogCategory findById(@Param("id") Long id);
+
     void insert(BlogCategory category);
 
     List<BlogCategory> list(@Param("keyword") String keyword);

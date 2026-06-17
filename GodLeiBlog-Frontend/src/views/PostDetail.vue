@@ -1,86 +1,137 @@
 <template>
-  <div class="post-container">
-    <!-- 文章内容（左侧） -->
-    <main class="post-main">
-      <div class="post-detail">
-        <!-- 标题 -->
-        <h1>{{ frontMatter.title || post.title }}</h1>
+  <div class="post-page">
+    <!-- 顶部阅读进度条 -->
+    <div class="read-progress" :style="{ width: readProgress + '%' }"></div>
 
-        <!-- 元信息 -->
-        <div class="post-meta">
-          <p v-if="frontMatter.tags">标签：{{ frontMatter.tags.join(', ') }}</p>
-          <p v-if="frontMatter.category">分类：{{ frontMatter.category.join(', ') }}</p>
-          <p>更新于 {{ formatDate(frontMatter.updated || post.updateTime || '') }}</p>
-        </div>
+    <div class="post-container">
+      <!-- 文章主体（左侧） -->
+      <main class="post-main">
+        <article class="post-card">
+          <!-- Hero 标题区 -->
+          <header class="post-hero">
+            <span class="post-kicker">ARTICLE</span>
+            <h1 class="post-title">{{ displayTitle }}</h1>
 
-        <!-- 描述 -->
-        <div v-if="frontMatter.description" class="post-description">
-          <p>{{ frontMatter.description }}</p>
-        </div>
+            <div class="post-meta">
+              <span class="meta-item" title="更新时间">
+                <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>
+                更新于 {{ formatDate(displayUpdated) }}
+              </span>
+              <span class="meta-divider"></span>
+              <span class="meta-item" title="预计阅读时长">
+                <svg viewBox="0 0 24 24"><path d="M12 8v5l3 2"/><circle cx="12" cy="12" r="9"/></svg>
+                约 {{ readingStats.minutes }} 分钟阅读
+              </span>
+              <span class="meta-divider"></span>
+              <span class="meta-item" title="字数">
+                <svg viewBox="0 0 24 24"><path d="M4 5h16M4 12h16M4 19h10"/></svg>
+                {{ readingStats.words.toLocaleString() }} 字
+              </span>
+            </div>
 
-        <hr />
-        <hr />
+            <div class="post-taxonomy" v-if="displayCategories.length || displayTags.length">
+              <span
+                v-for="cat in displayCategories"
+                :key="'cat-' + cat"
+                class="chip chip--cat"
+              >{{ cat }}</span>
+              <span
+                v-for="tag in displayTags"
+                :key="'tag-' + tag"
+                class="chip chip--tag"
+              >{{ tag }}</span>
+            </div>
 
-        <!-- 正文 -->
-        <div class="post-content" v-html="renderedMarkdown"></div>
+            <div v-if="displayDescription" class="post-description">
+              {{ displayDescription }}
+            </div>
+          </header>
 
-        <!-- 文章评论区域（Twikoo） -->
-        <section id="comments" class="post-comments">
-          <h2 class="post-comments-title">评论</h2>
-          <div class="post-comment-card">
-            <div id="tcomment-post" ref="twikooPost"></div>
-          </div>
-        </section>
-      </div>
-    </main>
+          <!-- 正文 -->
+          <div class="post-content" v-html="renderedMarkdown"></div>
 
-    <div class="toc-sidebar-container">
-    <!-- 目录（右侧，可折叠） -->
-    <aside
-      class="toc-sidebar"
-      :class="{ 'toc-sidebar--mobile-open': isMobileTocOpen }"
-      ref="tocSidebar"
-      v-if="headings.length"
-    >
-      <div class="toc-title">目录</div>
-      <ul class="toc-list">
-        <li
-          v-for="h in headings"
-          :key="h.anchor"
-          class="toc-item"
-          :style="{ marginLeft: (Math.min(h.level, 6) - 1) * 14 + 'px' }"
-          v-show="!isHiddenByParent(h)"
-          @click="scrollToAnchor(h.anchor)"
+          <!-- 文末：版权声明 -->
+          <footer class="post-footer">
+            <div class="post-copyright">
+              <b>版权声明：</b>本文由 {{ authorName }} 原创，转载请注明出处。
+            </div>
+          </footer>
+
+          <!-- 上一篇 / 下一篇 -->
+          <nav class="post-nav" v-if="post.prev || post.next">
+            <a
+              v-if="post.prev"
+              class="post-nav__item prev"
+              @click="goToPost(post.prev.id)"
+            >
+              <div class="nav-dir">← 上一篇</div>
+              <div class="nav-title">{{ post.prev.title }}</div>
+            </a>
+            <span v-else class="post-nav__placeholder"></span>
+
+            <a
+              v-if="post.next"
+              class="post-nav__item next"
+              @click="goToPost(post.next.id)"
+            >
+              <div class="nav-dir">下一篇 →</div>
+              <div class="nav-title">{{ post.next.title }}</div>
+            </a>
+            <span v-else class="post-nav__placeholder"></span>
+          </nav>
+
+          <!-- 评论区域（Twikoo） -->
+          <section id="comments" class="post-comments">
+            <h2 class="post-comments-title">评论</h2>
+            <div class="post-comment-card">
+              <div id="tcomment-post" ref="twikooPost"></div>
+            </div>
+          </section>
+        </article>
+      </main>
+
+      <!-- 右侧目录（可折叠） -->
+      <aside class="toc-sidebar-container" v-if="headings.length">
+        <div
+          class="toc-sidebar"
+          :class="{ 'toc-sidebar--mobile-open': isMobileTocOpen }"
         >
-          <span
-            v-if="hasChildren(h)"
-            class="toc-toggle"
-            @click.stop="toggleCollapse(h.anchor)"
-          >
-            {{ isCollapsed(h.anchor) ? '▶' : '▼' }}
-          </span>
-          <span
-            v-else
-            class="toc-toggle toc-toggle-placeholder"
-          ></span>
-          <span class="toc-link">
-            {{ h.title }}
-          </span>
-        </li>
-      </ul>
-    </aside>
-  </div>
+          <div class="toc-title">目录</div>
+          <ul class="toc-list">
+            <li
+              v-for="h in headings"
+              :key="h.anchor"
+              class="toc-item"
+              :class="[
+                'toc-item--lvl' + Math.min(h.level, 6),
+                { 'toc-item--active': h.anchor === activeAnchor }
+              ]"
+              v-show="!isHiddenByParent(h)"
+              @click="scrollToAnchor(h.anchor)"
+            >
+              <span
+                v-if="hasChildren(h)"
+                class="toc-toggle"
+                @click.stop="toggleCollapse(h.anchor)"
+              >{{ isCollapsed(h.anchor) ? '▶' : '▼' }}</span>
+              <span v-else class="toc-toggle toc-toggle-placeholder"></span>
+              <span class="toc-link">{{ h.title }}</span>
+            </li>
+          </ul>
+        </div>
+      </aside>
+    </div>
 
-    <!-- 桌面端右下角悬浮球 -->
-    <div class="float-buttons">
-      <button class="float-btn" @click="scrollToComments">
-        评
+    <!-- 悬浮操作球 -->
+    <div class="fabs">
+      <button class="fab" title="评论" @click="scrollToComments">
+        <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
       </button>
-      <button class="float-btn" @click="scrollToTop">
-        顶
+      <button class="fab" title="回到顶部" @click="scrollToTop">
+        <svg viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
       </button>
-      <button class="float-btn float-btn--toc" @click="toggleMobileToc">
-        目
+      <button class="fab fab--toc" title="目录" @click="toggleMobileToc">
+        <svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
       </button>
     </div>
   </div>
@@ -89,6 +140,7 @@
 <script>
 import { fetchPostById } from '@/api';
 import { loadTwikoo, getTwikooEnvId } from '@/utils/twikoo';
+import { loadSiteConfig } from '@/utils/siteConfig';
 import MarkdownIt from 'markdown-it';
 import hljs from 'highlight.js/lib/core';
 import bash from 'highlight.js/lib/languages/bash';
@@ -149,10 +201,60 @@ export default {
       headings: [],     // { level, title, anchor }
       collapsedMap: {}, // { [anchor]: boolean }
       isMobileTocOpen: false,
-      _onResizeBound: null
+      activeAnchor: '',
+      readProgress: 0,
+      authorName: 'GodLei Blog',
+      _onScrollBound: null
     };
   },
   computed: {
+    // 正文（剥离 front-matter 后的 Markdown body）
+    body() {
+      const { body, attributes } = fm(this.post.content || '');
+      this.frontMatter = attributes || {};
+      return body;
+    },
+    // 标题：优先后端结构化字段，回退 front-matter
+    displayTitle() {
+      return this.post.title || this.frontMatter.title || '';
+    },
+    // 描述：优先后端结构化字段，回退 front-matter
+    displayDescription() {
+      return this.post.description || this.frontMatter.description || '';
+    },
+    // 分类：优先后端结构化数组，回退 front-matter
+    displayCategories() {
+      return this.normalizeList(
+        (this.post.categories && this.post.categories.length)
+          ? this.post.categories
+          : this.frontMatter.category
+      );
+    },
+    // 标签：优先后端结构化数组，回退 front-matter
+    displayTags() {
+      return this.normalizeList(
+        (this.post.tags && this.post.tags.length)
+          ? this.post.tags
+          : this.frontMatter.tags
+      );
+    },
+    displayUpdated() {
+      return this.post.updateTime || this.frontMatter.updated || this.post.createTime || '';
+    },
+    // 字数与预计阅读时长（前端从正文派生，不落库）
+    readingStats() {
+      const text = this.body
+        .replace(/```[\s\S]*?```/g, ' ')      // 去掉代码块
+        .replace(/`[^`]*`/g, ' ')              // 去掉行内代码
+        .replace(/!\[[^\]]*\]\([^)]*\)/g, ' ') // 去掉图片
+        .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1') // 链接保留文字
+        .replace(/[#>*_~\-]/g, ' ');           // 去掉常见 markdown 标记
+      const cjk = (text.match(/[一-龥぀-ヿ]/g) || []).length;
+      const latinWords = (text.match(/[A-Za-z0-9]+/g) || []).length;
+      const words = cjk + latinWords;
+      const minutes = Math.max(1, Math.round(words / 300));
+      return { words, minutes };
+    },
     renderedMarkdown() {
       const md = new MarkdownIt({
         highlight: function (str, lang) {
@@ -166,13 +268,7 @@ export default {
       });
 
       // 自定义代码块渲染：增加头部信息 & 复制按钮
-      const defaultFence =
-        md.renderer.rules.fence ||
-        function (tokens, idx, options, env, self) {
-          return self.renderToken(tokens, idx, options);
-        };
-
-      md.renderer.rules.fence = (tokens, idx, options, env, self) => {
+      md.renderer.rules.fence = (tokens, idx, options) => {
         const token = tokens[idx];
         const info = token.info ? token.info.trim() : '';
         const lang = info.split(/\s+/g)[0] || '';
@@ -183,13 +279,13 @@ export default {
           highlighted = options.highlight(rawCode, lang) || '';
         }
 
-        const finalCode =
-          highlighted || md.utils.escapeHtml(rawCode || '');
+        const finalCode = highlighted || md.utils.escapeHtml(rawCode || '');
         const langLabel = lang || 'Text';
 
         return `
 <div class="code-block">
   <div class="code-block__header">
+    <span class="code-block__dots"><i></i><i></i><i></i></span>
     <span class="code-block__lang">${langLabel}</span>
     <button class="code-block__copy" type="button">复制</button>
   </div>
@@ -202,7 +298,7 @@ export default {
         const token = tokens[idx];
         const src = resolveImageUrl(token.attrGet('src'), coverFallbackUrl);
         const alt = token.content;
-        return `<img src="${src}" alt="${alt}" class="post-content-image" loading="lazy" style="max-width: 100%; height: auto; display: block; margin: 10px 0;" />`;
+        return `<img src="${src}" alt="${alt}" class="post-content-image" loading="lazy" />`;
       };
 
       // 自定义标题渲染规则（添加锚点）
@@ -211,159 +307,106 @@ export default {
         const level = token.tag.slice(1);
         const nextToken = tokens[idx + 1];
         const title = nextToken.content;
-        const anchor = title
-          .toLowerCase()
-          .replace(/\s+/g, '-')
-          .replace(/[^\w\-一-龥]/g, '');
+        const anchor = this.makeAnchor(title);
         return `<h${level} id="${anchor}">`;
       };
 
-      // 解析 Front-matter 并分离正文
-      const { body, attributes } = fm(this.post.content || '');
-      this.frontMatter = attributes || {};
-
       // 提取标题列表
-      this.extractHeadings(body);
+      this.extractHeadings(this.body);
 
       // 渲染正文
-      return md.render(body);
+      return md.render(this.body);
     }
   },
   watch: {
+    // 切换文章（上一篇/下一篇）时重新加载
+    id() {
+      this.reload();
+    },
     renderedMarkdown() {
       this.$nextTick(() => {
         this.enhanceCodeBlocks();
         this.enhanceContentImages();
-        this.updateTocPosition();
+        this.updateActiveAnchor();
       });
     }
   },
   methods: {
-    enhanceContentImages() {
-      const images = this.$el?.querySelectorAll('.post-content img') || [];
-      images.forEach((img) => bindImageFallback(img, coverFallbackUrl));
-    },
-    updateTocPosition() {
-      // 仅桌面端需要精确贴右；移动端 TOC 走抽屉 fixed right/bottom
-      if (typeof window === 'undefined') return;
-      const tocEl = this.$refs.tocSidebar;
-      if (!tocEl) return;
-
-      // 移动端：清掉桌面端写入的内联定位，让 media query 的 right/bottom 生效
-      if (window.innerWidth <= 768) {
-        tocEl.style.left = '';
-        tocEl.style.right = '';
-        return;
-      }
-
-      const postCard = this.$el.querySelector('.post-detail');
-      if (!postCard) return;
-
-      const gap = 20;
-      const viewportPadding = 16;
-
-      const postRect = postCard.getBoundingClientRect();
-      const tocRect = tocEl.getBoundingClientRect();
-      const tocWidth = tocRect.width || 260;
-
-      // 理想位置：紧贴文章卡片右侧
-      let left = postRect.right + gap;
-
-      // 夹在视口内，避免越界
-      const maxLeft = window.innerWidth - viewportPadding - tocWidth;
-      if (left > maxLeft) left = maxLeft;
-      if (left < viewportPadding) left = viewportPadding;
-
-      tocEl.style.left = `${left}px`;
-      tocEl.style.right = 'auto';
+    normalizeList(value) {
+      if (value == null) return [];
+      if (Array.isArray(value)) return value.map(v => String(v).trim()).filter(Boolean);
+      return String(value).split(',').map(v => v.trim()).filter(Boolean);
     },
 
-    // 平滑滚动到锚点（整行点击）
-    scrollToAnchor(anchor) {
-      const el = document.getElementById(anchor);
-      if (!el) return;
-      const offset = 90; // 和 scroll-margin-top 对齐，可微调
-      const rect = el.getBoundingClientRect();
-      const top = window.pageYOffset + rect.top - offset;
-
-      window.scrollTo({
-        top,
-        behavior: 'smooth'
-      });
-
-      // 手机端点击目录项后自动收起目录
-      if (window.innerWidth <= 768) {
-        this.isMobileTocOpen = false;
-      }
+    makeAnchor(title) {
+      return String(title)
+        .toLowerCase()
+        .replace(/\s+/g, '-')
+        .replace(/[^\w\-一-龥]/g, '');
     },
 
     // 提取标题：按 # 的真实数量作为层级（H1~H6），排除代码块中的 #
     extractHeadings(markdown) {
       const headings = [];
-      const lines = markdown.split('\n');
+      const lines = (markdown || '').split('\n');
       let inCodeBlock = false;
 
       lines.forEach(line => {
         const trimmed = line.trim();
-
-        // 代码块内部不解析标题
         if (trimmed.startsWith('```')) {
           inCodeBlock = !inCodeBlock;
           return;
         }
         if (inCodeBlock) return;
 
-        // 匹配行首 # 标题，1~6 个 #
         const m = trimmed.match(/^(#{1,6})\s+(.+)$/);
         if (!m) return;
 
-        const level = m[1].length; // 1 ~ 6
+        const level = m[1].length;
         const title = m[2].trim();
-        const anchor = title
-          .toLowerCase()
-          .replace(/\s+/g, '-')          // 空格 -> -
-          .replace(/[^\w\-一-龥]/g, '');  // 去掉大部分标点
-
-        headings.push({ level, title, anchor });
+        headings.push({ level, title, anchor: this.makeAnchor(title) });
       });
 
       this.headings = headings;
     },
 
-    // 折叠 / 展开某个标题
-    toggleCollapse(anchor) {
-      this.collapsedMap[anchor] = !this.collapsedMap[anchor];
+    // 平滑滚动到锚点
+    scrollToAnchor(anchor) {
+      const el = document.getElementById(anchor);
+      if (!el) return;
+      const offset = 90;
+      const top = window.pageYOffset + el.getBoundingClientRect().top - offset;
+      window.scrollTo({ top, behavior: 'smooth' });
+      if (window.innerWidth <= 900) {
+        this.isMobileTocOpen = false;
+      }
     },
 
+    toggleCollapse(anchor) {
+      this.collapsedMap = { ...this.collapsedMap, [anchor]: !this.collapsedMap[anchor] };
+    },
     isCollapsed(anchor) {
       return !!this.collapsedMap[anchor];
     },
-
-    // 当前标题是否有子标题（决定是否显示三角）
     hasChildren(h) {
       const idx = this.headings.findIndex(x => x.anchor === h.anchor);
       if (idx === -1) return false;
-      const myLevel = h.level;
-
       for (let i = idx + 1; i < this.headings.length; i++) {
         const lv = this.headings[i].level;
-        if (lv <= myLevel) return false; // 遇到同级/更上级则结束
-        if (lv > myLevel) return true;   // 遇到更深层即有子孙
+        if (lv <= h.level) return false;
+        if (lv > h.level) return true;
       }
       return false;
     },
-
-    // 如果上方某个祖先被折叠，则当前标题隐藏
     isHiddenByParent(h) {
       const idx = this.headings.findIndex(x => x.anchor === h.anchor);
       if (idx <= 0) return false;
-
       let curLevel = h.level;
       for (let i = idx - 1; i >= 0; i--) {
         const prev = this.headings[i];
         if (prev.level < curLevel) {
           if (this.collapsedMap[prev.anchor]) return true;
-          curLevel = prev.level; // 继续往更高祖先找
+          curLevel = prev.level;
         }
       }
       return false;
@@ -372,35 +415,52 @@ export default {
     formatDate(dateString) {
       if (!dateString) return '未知时间';
       const date = new Date(dateString);
-      if (isNaN(date.getTime())) return '无效日期';
+      if (isNaN(date.getTime())) return String(dateString);
       return date.toLocaleDateString('zh-CN');
     },
 
-    // 滚动到页面顶部
     scrollToTop() {
-      window.scrollTo({
-        top: 0,
-        behavior: 'smooth'
-      });
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     },
-
-    // 滚动到评论区域（假定评论容器 id 为 comments）
     scrollToComments() {
       const el = document.getElementById('comments');
       if (!el) return;
-      const rect = el.getBoundingClientRect();
-      const offset = 90; // 和标题滚动偏移保持一致
-      const top = window.pageYOffset + rect.top - offset;
-
-      window.scrollTo({
-        top,
-        behavior: 'smooth'
-      });
+      const top = window.pageYOffset + el.getBoundingClientRect().top - 90;
+      window.scrollTo({ top, behavior: 'smooth' });
     },
-
-    // 切换手机端目录抽屉
     toggleMobileToc() {
       this.isMobileTocOpen = !this.isMobileTocOpen;
+    },
+
+    // 跳转到相邻文章
+    goToPost(id) {
+      if (!id || id === this.id) return;
+      this.$router.push(`/posts/${id}`);
+    },
+
+    // 滚动时更新进度条与目录高亮
+    onScroll() {
+      const doc = document.documentElement;
+      const scrollable = doc.scrollHeight - doc.clientHeight;
+      this.readProgress = scrollable > 0
+        ? Math.min(100, (doc.scrollTop / scrollable) * 100)
+        : 0;
+      this.updateActiveAnchor();
+    },
+    updateActiveAnchor() {
+      let current = '';
+      for (const h of this.headings) {
+        const el = document.getElementById(h.anchor);
+        if (el && el.getBoundingClientRect().top < 120) {
+          current = h.anchor;
+        }
+      }
+      this.activeAnchor = current;
+    },
+
+    enhanceContentImages() {
+      const images = this.$el?.querySelectorAll('.post-content img') || [];
+      images.forEach((img) => bindImageFallback(img, coverFallbackUrl));
     },
 
     // 为代码块绑定复制事件
@@ -409,23 +469,20 @@ export default {
       blocks.forEach(block => {
         const btn = block.querySelector('.code-block__copy');
         if (!btn || btn.dataset.bound === 'true') return;
-
         btn.dataset.bound = 'true';
         btn.addEventListener('click', () => {
           const codeEl = block.querySelector('pre code');
           if (!codeEl) return;
           const text = codeEl.innerText;
-
           const setCopied = () => {
             const oldText = btn.innerText;
             btn.innerText = '已复制';
-            btn.classList.add('code-block__copy--success');
+            btn.classList.add('code-block__copy--ok');
             setTimeout(() => {
               btn.innerText = oldText;
-              btn.classList.remove('code-block__copy--success');
+              btn.classList.remove('code-block__copy--ok');
             }, 2000);
           };
-
           if (navigator.clipboard && navigator.clipboard.writeText) {
             navigator.clipboard.writeText(text).then(setCopied).catch(() => {});
           } else {
@@ -446,135 +503,639 @@ export default {
           }
         });
       });
+    },
+
+    async loadPost() {
+      try {
+        const response = await fetchPostById(this.id);
+        this.post = response.data || {};
+      } catch (error) {
+        console.error('加载文章失败:', error);
+        this.post = {};
+      }
+    },
+
+    async initTwikoo() {
+      await this.$nextTick();
+      const el = this.$refs.twikooPost;
+      if (!el) return;
+      try {
+        const tw = await loadTwikoo();
+        await Promise.resolve(
+          tw.init({
+            envId: getTwikooEnvId(),
+            el,
+            path: `/posts/${this.id}`
+          })
+        );
+      } catch (e) {
+        console.error('文章页 Twikoo 初始化失败', e);
+      }
+    },
+
+    // 切换文章时整体重载
+    async reload() {
+      this.collapsedMap = {};
+      this.activeAnchor = '';
+      await this.loadPost();
+      window.scrollTo({ top: 0 });
+      this.initTwikoo();
     }
   },
   async created() {
+    await this.loadPost();
+    // 版权署名取自站点配置
     try {
-      const response = await fetchPostById(this.id);
-      this.post = response.data;
-    } catch (error) {
-      console.error('加载文章失败:', error);
+      const config = await loadSiteConfig();
+      if (config?.basic?.siteName) {
+        this.authorName = config.basic.siteName;
+      }
+    } catch (e) {
+      console.warn('加载站点配置失败，版权署名使用默认值', e);
     }
   },
   async mounted() {
-    await this.$nextTick();
-    const el = this.$refs.twikooPost;
-    if (!el) {
-      console.warn('Twikoo 容器未找到');
-      return;
-    }
-    try {
-      const tw = await loadTwikoo();
-      await Promise.resolve(
-        tw.init({
-          envId: getTwikooEnvId(),
-          el,
-          path: `/posts/${this.id}`
-        })
-      );
-    } catch (e) {
-      console.error('文章页 Twikoo 初始化失败', e);
-    }
-
-    // 初始化并监听窗口变化，保证 TOC 始终贴在文章卡片右侧
-    this.$nextTick(() => {
-      this.updateTocPosition();
-    });
-    this._onResizeBound = () => this.updateTocPosition();
-    window.addEventListener('resize', this._onResizeBound, { passive: true });
-  }
-  ,
-  beforeDestroy() {
-    if (this._onResizeBound) {
-      window.removeEventListener('resize', this._onResizeBound);
-      this._onResizeBound = null;
+    this.initTwikoo();
+    this._onScrollBound = () => this.onScroll();
+    window.addEventListener('scroll', this._onScrollBound, { passive: true });
+    this.$nextTick(() => this.onScroll());
+  },
+  beforeUnmount() {
+    if (this._onScrollBound) {
+      window.removeEventListener('scroll', this._onScrollBound);
+      this._onScrollBound = null;
     }
   }
 };
 </script>
 
 <style scoped>
-.post-container {
-  display: flex;
-  gap: 20px;
-  max-width: 1200px;
-  margin: 40px auto;
-  padding: 20px;
-  justify-content: center;
-  align-items: flex-start;
+.post-page {
+  position: relative;
 }
 
-/* 文章主体固定一个合理宽度 */
+/* 顶部阅读进度条 */
+.read-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 3px;
+  z-index: 2000;
+  background: linear-gradient(90deg, var(--theme-accent), var(--theme-accent-strong));
+  box-shadow: 0 0 12px var(--theme-accent-glow);
+  transition: width 0.1s linear;
+}
+
+/* 布局 */
+.post-container {
+  display: grid;
+  grid-template-columns: minmax(0, 760px) 264px;
+  gap: 36px;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 24px 24px 80px;
+  justify-content: center;
+  align-items: start;
+}
+
 .post-main {
-  flex: 1 1 700px;
-  max-width: 700px;
   min-width: 0;
 }
 
-.toc-sidebar-container {
-  flex: 0 0 260px;
+/* 文章卡片 */
+.post-card {
   position: relative;
-  align-self: flex-start;
+  background: var(--theme-accent-panel);
+  border: 1px solid var(--theme-accent-border-soft);
+  border-radius: 18px;
+  box-shadow: 0 24px 60px var(--theme-accent-shadow-strong);
+  overflow: hidden;
+}
+.post-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--theme-accent-line-horizontal);
 }
 
-/* 目录在右侧，宽度较窄，并固定在页头下面 */
-.toc-sidebar {
-  width: min(260px, calc(100vw - 32px));
-  background-color: #2d2d2d;
-  padding: 12px 10px;
-  border-radius: 8px;
-  font-size: 13px;
-  color: #ccc;
-  height: fit-content;
-  overflow-y: auto;
-  max-height: 80vh;
-  position: fixed;
-  right: 16px; /* 默认回退：避免窄屏重叠 */
-  left: auto;
+/* Hero 标题区 */
+.post-hero {
+  position: relative;
+  padding: 40px 44px 28px;
+  border-bottom: 1px solid var(--theme-accent-border-soft);
+  background:
+    radial-gradient(120% 80% at 0% 0%, rgba(122, 29, 45, 0.30), transparent 60%),
+    radial-gradient(90% 70% at 100% 0%, rgba(214, 173, 92, 0.12), transparent 55%);
+}
+.post-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  color: var(--theme-accent-text);
+  margin-bottom: 16px;
+}
+.post-kicker::before {
+  content: "";
+  width: 22px;
+  height: 1px;
+  background: var(--theme-accent-strong);
+}
+.post-title {
+  margin: 0;
+  font-size: clamp(23px, 3vw, 32px);
+  line-height: 1.3;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  background: var(--theme-accent-title-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: 0 2px 30px rgba(214, 173, 92, 0.12);
 }
 
-.toc-title {
+.post-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  margin-top: 22px;
+  font-size: 13.5px;
+  color: var(--theme-accent-text-soft);
+}
+.meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  opacity: 0.92;
+}
+.meta-item svg {
+  width: 15px;
+  height: 15px;
+  stroke: var(--theme-accent-strong);
+  fill: none;
+  stroke-width: 1.7;
+}
+.meta-divider {
+  width: 1px;
+  height: 14px;
+  background: var(--theme-accent-border);
+}
+
+.post-taxonomy {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 20px;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 13px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  background: var(--theme-accent-surface);
+  border: 1px solid var(--theme-accent-border-soft);
+  color: var(--theme-accent-text-soft);
+  transition: all 0.18s ease;
+  cursor: default;
+}
+.chip:hover {
+  background: var(--theme-accent-surface-strong);
+  border-color: var(--theme-accent-border);
+  transform: translateY(-1px);
+  color: var(--theme-accent-text-strong);
+}
+.chip--cat {
+  color: var(--theme-accent-text);
   font-weight: 600;
-  font-size: 13px;
-  margin-bottom: 8px;
+}
+.chip--cat::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--theme-accent-strong);
+}
+.chip--tag::before {
+  content: "#";
+  color: var(--theme-accent-strong);
+  font-weight: 700;
 }
 
+.post-description {
+  margin-top: 24px;
+  padding: 14px 18px;
+  border-left: 3px solid var(--theme-accent-strong);
+  background: var(--theme-accent-surface-soft);
+  border-radius: 0 10px 10px 0;
+  color: var(--theme-accent-text-soft);
+  font-style: italic;
+  font-size: 15px;
+}
+
+/* 正文 */
+.post-content {
+  padding: 36px 44px 8px;
+  font-size: 16.5px;
+  line-height: 1.85;
+  color: #ececec;
+}
+:deep(.post-content p) {
+  margin: 0 0 18px;
+}
+:deep(.post-content h1),
+:deep(.post-content h2),
+:deep(.post-content h3),
+:deep(.post-content h4),
+:deep(.post-content h5),
+:deep(.post-content h6) {
+  scroll-margin-top: 90px;
+  color: var(--theme-accent-text-strong);
+  font-weight: 700;
+}
+:deep(.post-content h2) {
+  position: relative;
+  font-size: 25px;
+  line-height: 1.4;
+  margin: 40px 0 18px;
+  padding-left: 16px;
+}
+:deep(.post-content h2)::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 4px;
+  bottom: 4px;
+  width: 5px;
+  border-radius: 3px;
+  background: var(--theme-accent-line-vertical);
+  box-shadow: 0 0 10px var(--theme-accent-glow);
+}
+:deep(.post-content h3) {
+  font-size: 20px;
+  margin: 30px 0 14px;
+  color: var(--theme-accent-text-soft);
+}
+:deep(.post-content a) {
+  color: var(--theme-accent-text);
+  text-decoration: none;
+  border-bottom: 1px solid var(--theme-accent-border);
+}
+:deep(.post-content a:hover) {
+  color: var(--theme-accent-text-strong);
+  border-color: var(--theme-accent-strong);
+}
+:deep(.post-content ul),
+:deep(.post-content ol) {
+  margin: 0 0 18px;
+  padding-left: 26px;
+}
+:deep(.post-content li) {
+  margin: 7px 0;
+}
+:deep(.post-content li::marker) {
+  color: var(--theme-accent-strong);
+}
+:deep(.post-content strong) {
+  color: var(--theme-accent-text-soft);
+}
+
+/* 行内代码 */
+:deep(.post-content :not(pre) > code) {
+  background: var(--theme-accent-surface);
+  border: 1px solid var(--theme-accent-border-soft);
+  padding: 2px 7px;
+  border-radius: 6px;
+  font-size: 14px;
+  color: var(--theme-accent-text-soft);
+  font-family: 'JetBrains Mono', 'Fira Code', Menlo, Consolas, 'Courier New', monospace;
+}
+
+/* 引用块 */
+:deep(.post-content blockquote) {
+  margin: 22px 0;
+  padding: 14px 20px;
+  border-left: 4px solid var(--theme-accent);
+  background: linear-gradient(90deg, rgba(122, 29, 45, 0.18), transparent);
+  border-radius: 0 12px 12px 0;
+  color: #d8c7c9;
+}
+:deep(.post-content blockquote p) {
+  margin: 0;
+}
+
+/* 代码块 */
+:deep(.code-block) {
+  position: relative;
+  margin: 24px 0;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid var(--theme-accent-border-soft);
+  background: linear-gradient(160deg, #1c1014, #0c0608);
+  box-shadow: 0 14px 34px var(--theme-accent-shadow);
+}
+:deep(.code-block__header) {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 14px;
+  font-size: 12px;
+  background: linear-gradient(90deg, rgba(74, 18, 29, 0.6), rgba(12, 6, 8, 0.9));
+  border-bottom: 1px solid var(--theme-accent-border-soft);
+}
+:deep(.code-block__dots) {
+  display: flex;
+  gap: 6px;
+}
+:deep(.code-block__dots i) {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  display: inline-block;
+}
+:deep(.code-block__dots i:nth-child(1)) { background: #e06c5a; }
+:deep(.code-block__dots i:nth-child(2)) { background: var(--theme-accent-strong); }
+:deep(.code-block__dots i:nth-child(3)) { background: #7faf6a; }
+:deep(.code-block__lang) {
+  color: var(--theme-accent-text);
+  letter-spacing: 0.08em;
+  font-weight: 600;
+  margin-left: auto;
+}
+:deep(.code-block__copy) {
+  border: 1px solid var(--theme-accent-border-soft);
+  background: var(--theme-accent-surface);
+  color: var(--theme-accent-text-soft);
+  font-size: 12px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+:deep(.code-block__copy:hover) {
+  background: var(--theme-accent-surface-strong);
+  border-color: var(--theme-accent-border);
+  color: #fff;
+}
+:deep(.code-block__copy--ok) {
+  background: rgba(120, 170, 90, 0.25);
+  border-color: rgba(120, 170, 90, 0.5);
+  color: #d6f0c0;
+}
+:deep(.code-block__body) {
+  margin: 0;
+  padding: 16px 18px;
+  overflow-x: auto;
+  background: transparent;
+}
+:deep(.code-block__body code) {
+  background: transparent;
+  font-family: 'JetBrains Mono', 'Fira Code', Menlo, Consolas, 'Courier New', monospace;
+  font-size: 13.5px;
+  line-height: 1.7;
+}
+
+/* 表格 */
+:deep(.post-content table) {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 24px 0;
+  font-size: 14.5px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--theme-accent-border-soft);
+}
+:deep(.post-content th),
+:deep(.post-content td) {
+  padding: 11px 14px;
+  text-align: left;
+  border-bottom: 1px solid var(--theme-accent-border-soft);
+}
+:deep(.post-content th) {
+  background: rgba(74, 18, 29, 0.45);
+  color: var(--theme-accent-text-soft);
+  font-weight: 700;
+}
+:deep(.post-content tr:last-child td) {
+  border-bottom: none;
+}
+:deep(.post-content tbody tr:hover) {
+  background: var(--theme-accent-surface-soft);
+}
+
+/* 图片 */
+:deep(.post-content img) {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 22px auto;
+  border-radius: 12px;
+  border: 1px solid var(--theme-accent-border-soft);
+  box-shadow: 0 10px 28px var(--theme-accent-shadow);
+}
+
+/* 文末版权 */
+.post-footer {
+  margin: 16px 44px 0;
+  padding-top: 22px;
+  border-top: 1px solid var(--theme-accent-border-soft);
+}
+.post-copyright {
+  padding: 16px 18px;
+  border-radius: 12px;
+  font-size: 13px;
+  background: var(--theme-accent-surface-soft);
+  border: 1px dashed var(--theme-accent-border-soft);
+  color: #cdbfb0;
+  line-height: 1.7;
+}
+.post-copyright b {
+  color: var(--theme-accent-text-soft);
+}
+
+/* 上一篇 / 下一篇 */
+.post-nav {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin: 24px 44px 8px;
+}
+.post-nav__item {
+  display: block;
+  padding: 16px 18px;
+  border-radius: 12px;
+  text-decoration: none;
+  cursor: pointer;
+  background: var(--theme-accent-surface-soft);
+  border: 1px solid var(--theme-accent-border-soft);
+  transition: all 0.18s ease;
+}
+.post-nav__item:hover {
+  background: var(--theme-accent-surface);
+  border-color: var(--theme-accent-border);
+  transform: translateY(-2px);
+}
+.post-nav__placeholder {
+  display: block;
+}
+.post-nav .nav-dir {
+  font-size: 12px;
+  color: var(--theme-accent-text);
+  letter-spacing: 0.1em;
+}
+.post-nav .nav-title {
+  margin-top: 6px;
+  color: var(--theme-accent-text-soft);
+  font-weight: 600;
+  font-size: 15px;
+}
+.post-nav .next {
+  text-align: right;
+}
+
+/* 评论 */
+.post-comments {
+  margin: 30px 44px 40px;
+}
+.post-comments-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 21px;
+  color: var(--theme-accent-text-strong);
+  margin-bottom: 16px;
+}
+.post-comments-title::before {
+  content: "";
+  width: 5px;
+  height: 22px;
+  border-radius: 3px;
+  background: var(--theme-accent-line-vertical);
+}
+.post-comment-card {
+  background: rgba(8, 3, 5, 0.6);
+  border: 1px solid var(--theme-accent-border-soft);
+  border-radius: 14px;
+  padding: 20px;
+}
+#tcomment-post {
+  color: #ffffff;
+}
+
+/* 右侧目录 */
+.toc-sidebar-container {
+  position: relative;
+}
+.toc-sidebar {
+  position: sticky;
+  top: 84px;
+  background: var(--theme-accent-panel-soft);
+  border: 1px solid var(--theme-accent-border-soft);
+  border-radius: 16px;
+  padding: 18px 16px;
+  max-height: calc(100vh - 110px);
+  overflow-y: auto;
+  box-shadow: 0 16px 40px var(--theme-accent-shadow);
+}
+.toc-title {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 13px;
+  letter-spacing: 0.14em;
+  color: var(--theme-accent-text);
+  font-weight: 700;
+  margin-bottom: 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--theme-accent-border-soft);
+}
+.toc-title::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--theme-accent-strong);
+}
 .toc-list {
   list-style: none;
   margin: 0;
   padding: 0;
 }
-
 .toc-item {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 4px;
-  margin: 2px 0;
-  cursor: pointer; /* 整行可点击跳转 */
-}
-
-/* 鼠标悬停高亮整行目录 */
-.toc-item:hover {
-  background-color: rgba(255, 255, 255, 0.04);
-  border-radius: 4px;
-}
-
-.toc-toggle {
+  margin: 1px 0;
+  border-radius: 7px;
+  border-left: 2px solid transparent;
   cursor: pointer;
-  font-size: 9px;    /* 略大一点，更明显 */
+  transition: all 0.15s ease;
+}
+.toc-item:hover {
+  background: var(--theme-accent-surface-soft);
+}
+/* 一级（h2）：方块标记、字号略大 */
+.toc-item--lvl2 {
+  padding: 6px 10px 6px 8px;
+}
+.toc-item--lvl2 .toc-link {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #cabdb0;
+}
+/* 二级及更深（h3+）：缩进 + 树状连接线 */
+.toc-item--lvl3,
+.toc-item--lvl4,
+.toc-item--lvl5,
+.toc-item--lvl6 {
+  padding: 4px 10px 4px 26px;
+}
+.toc-item--lvl3 .toc-link,
+.toc-item--lvl4 .toc-link,
+.toc-item--lvl5 .toc-link,
+.toc-item--lvl6 .toc-link {
+  font-size: 11.5px;
+  color: #a5988f;
+}
+.toc-item--lvl3::before,
+.toc-item--lvl4::before,
+.toc-item--lvl5::before,
+.toc-item--lvl6::before {
+  content: "";
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  width: 8px;
+  height: 1px;
+  background: var(--theme-accent-border);
+}
+.toc-item--active {
+  background: var(--theme-accent-surface);
+  border-left-color: var(--theme-accent-strong);
+}
+.toc-item--active .toc-link {
+  color: var(--theme-accent-text-strong);
+  font-weight: 600;
+}
+.toc-toggle {
+  font-size: 9px;
   color: #bbb;
   user-select: none;
   width: 10px;
   text-align: center;
+  flex: 0 0 auto;
 }
-
 .toc-toggle-placeholder {
   visibility: hidden;
 }
-
 .toc-link {
-  color: var(--theme-accent-text);
-  text-decoration: none;
   flex: 1;
   min-width: 0;
   white-space: nowrap;
@@ -582,282 +1143,94 @@ export default {
   text-overflow: ellipsis;
 }
 
-.toc-link:hover {
-  text-decoration: underline;
-  color: #fff;
-}
-
-/* 桌面端贴右逻辑由 JS 动态计算 left，CSS 仅保留回退定位 */
-
-/* 文章卡片样式 */
-.post-detail {
-  padding: 20px;
-  background-color: #1e1e1ee0;
-  color: #ffffff;
-  border-radius: 8px;
-  border: #ffffff 1px solid;
-}
-
-/* 正文基础样式 */
-.post-content {
-  line-height: 1.6;
-  font-size: 16px;
-}
-
-/* 点击目录时防止标题被页头遮挡 */
-:deep(.post-content h1),
-:deep(.post-content h2),
-:deep(.post-content h3),
-:deep(.post-content h4),
-:deep(.post-content h5),
-:deep(.post-content h6) {
-  scroll-margin-top: 90px; /* 视实际导航高度微调 */
-}
-
-/* 表格样式 */
-:deep(.post-content table) {
-  width: 100%;
-  border-collapse: collapse;
-  margin: 20px 0;
-  background-color: #2d2d2d;
-  color: #ffffff;
-}
-
-:deep(.post-content th),
-:deep(.post-content td) {
-  border: 1px solid #444;
-  padding: 10px;
-  text-align: left;
-}
-
-:deep(.post-content th) {
-  background-color: #3a3a3a;
-  font-weight: bold;
-}
-
-/* 代码块样式 */
-:deep(.post-content pre) {
-  background-color: #1e1e1e;
-  padding: 14px 16px;
-  overflow-x: auto;
-}
-
-:deep(.post-content code) {
-  background-color: rgba(0, 0, 0, 0.22);
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-family: 'JetBrains Mono', 'Fira Code', Menlo, Consolas, 'Courier New',
-    monospace;
-  font-size: 13px;
-}
-
-/* 独立代码块容器（含标题 & 复制按钮） */
-:deep(.code-block) {
-  position: relative;
-  margin: 18px 0;
-  border-radius: 12px;
-  border: 1px solid #ffffff8e;
-  overflow: hidden;
-  background: radial-gradient(circle at top left, #2b3a4a, #141414);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
-}
-
-:deep(.code-block__header) {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 6px 12px;
-  font-size: 12px;
-  background: linear-gradient(90deg, rgba(72, 89, 117, 0.9), rgba(20, 20, 20, 0.95));
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-:deep(.code-block__lang) {
-  color: #e2e8f0;
-  font-weight: 500;
-  letter-spacing: 0.03em;
-}
-
-:deep(.code-block__body) {
-  margin: 0;
-  padding: 10px 14px 12px;
-  background: transparent;
-  font-size: 13px;
-}
-
-:deep(.code-block__body code) {
-  background: transparent;
-  font-family: 'JetBrains Mono', 'Fira Code', Menlo, Consolas, 'Courier New',
-    monospace;
-}
-
-:deep(.code-block__copy) {
-  border: none;
-  outline: none;
-  background: rgba(15, 23, 42, 0.7);
-  color: #cbd5f5;
-  font-size: 12px;
-  padding: 4px 10px;
-  border-radius: 999px;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  transition: background 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease,
-    color 0.15s ease;
-}
-
-:deep(.code-block__copy:hover) {
-  background: rgba(37, 99, 235, 0.9);
-  color: #e5edff;
-  transform: translateY(-0.5px);
-  box-shadow: 0 0 0 1px rgba(96, 165, 250, 0.6);
-}
-
-:deep(.code-block__copy:active) {
-  transform: translateY(0.5px) scale(0.98);
-  box-shadow: none;
-}
-
-:deep(.code-block__copy--success) {
-  background: rgba(22, 163, 74, 0.9);
-  color: #e5ffe6;
-}
-
-/* 图片样式 */
-:deep(.post-content img) {
-  max-width: 100%;
-  height: auto;
-  display: block;
-  margin: 10px 0;
-}
-
-.post-meta,
-.post-description {
-  margin-bottom: 20px;
-  font-size: 14px;
-  color: #cccccc;
-}
-
-.post-description p {
-  font-style: italic;
-  margin: 0;
-}
-
-/* 文章内嵌评论区域样式 */
-.post-comments {
-  margin-top: 40px;
-}
-
-.post-comments-title {
-  font-size: 20px;
-  margin-bottom: 12px;
-}
-
-.post-comment-card {
-  background-color: rgba(0, 0, 0, 0.8);
-  border-radius: 10px;
-  padding: 16px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(255, 255, 255, 0.5);
-}
-
-#tcomment-post {
-  color: #ffffff;
-}
-
-/* 桌面端右下角悬浮按钮容器 */
-.float-buttons {
+/* 悬浮操作球 */
+.fabs {
   position: fixed;
-  right: 32px;
-  bottom: 40px;
+  right: 30px;
+  bottom: 36px;
   display: flex;
   flex-direction: column;
   gap: 12px;
   z-index: 1000;
 }
-
-.float-btn {
-  width: 34px;
-  height: 34px;
-  border-radius: 8px;
-  border: none;
-  background: linear-gradient(135deg, rgba(122, 29, 45, 0.92), rgba(214, 173, 92, 0.86));
-  color: #fff;
-  font-size: 14px;
+.fab {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  border: 1px solid var(--theme-accent-border-soft);
+  background: linear-gradient(135deg, rgba(74, 18, 29, 0.95), rgba(214, 173, 92, 0.32));
+  color: var(--theme-accent-text-soft);
   cursor: pointer;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
-  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 8px 20px var(--theme-accent-shadow-strong);
+  transition: all 0.18s ease;
+}
+.fab svg {
+  width: 20px;
+  height: 20px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.8;
+}
+.fab:hover {
+  transform: translateY(-3px);
+  color: #fff;
+  border-color: var(--theme-accent-border);
+  box-shadow: 0 12px 26px var(--theme-accent-shadow-strong), 0 0 0 1px var(--theme-accent-glow);
+}
+.fab--toc {
+  display: none;
 }
 
-.float-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.55);
-  background: linear-gradient(135deg, rgba(150, 52, 67, 0.96), rgba(231, 199, 119, 0.9));
-}
-
-/* 手机适配：窄屏下改为上下布局 */
-@media (max-width: 768px) {
+/* 响应式 */
+@media (max-width: 900px) {
   .post-container {
-    flex-direction: column;
-    margin: 80px auto 40px;
-    padding: 10px;
+    grid-template-columns: minmax(0, 1fr);
+    padding: 12px 14px 60px;
+  }
+  .post-hero {
+    padding: 28px 22px 22px;
+  }
+  .post-content {
+    padding: 26px 22px 4px;
+    font-size: 16px;
+  }
+  .post-footer,
+  .post-nav,
+  .post-comments {
+    margin-left: 22px;
+    margin-right: 22px;
+  }
+  .post-nav {
+    grid-template-columns: 1fr;
   }
 
-  .post-main {
-    flex: 1 1 auto;
-    width: 100%;
+  /* 目录改为抽屉 */
+  .toc-sidebar-container {
+    position: static;
   }
-
-  .post-detail {
-    padding: 16px;
-  }
-
-  /* 手机端：目录默认隐藏，点击右下角“目”按钮后，从右侧悬浮展开，带动画 */
   .toc-sidebar {
     position: fixed;
+    top: auto;
     right: 16px;
     bottom: 70px;
-    width: 70vw;
+    width: 72vw;
     max-width: 320px;
-    max-height: 82vh;
-    margin-top: 0;
+    max-height: 70vh;
     z-index: 1100;
-    border: 1px solid #ffffff;
     opacity: 0;
     transform: translateY(10px);
     pointer-events: none;
     transition: opacity 0.2s ease, transform 0.2s ease;
   }
-
-  .toc-sidebar-container {
-    position: static;
-    flex: 0 0 auto;
-  }
-
-  .toc-sidebar.toc-sidebar--mobile-open {
+  .toc-sidebar--mobile-open {
     opacity: 1;
     transform: translateY(0);
     pointer-events: auto;
   }
-
-  .toc-sidebar .toc-list {
-    max-height: 72vh;
-    overflow-y: auto;
-  }
-
-  /* 覆盖 markdown 中图片的内联宽度，使其在手机上占满容器 */
-  :deep(.post-content img) {
-    width: 100% !important;
-    max-width: 100%;
-    height: auto;
-  }
-}
-
-/* 桌面端隐藏“目录”悬浮球（仅移动端需要） */
-@media (min-width: 769px) {
-  .float-btn--toc {
-    display: none;
+  .fab--toc {
+    display: grid;
   }
 }
 </style>

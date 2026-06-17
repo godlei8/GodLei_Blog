@@ -68,6 +68,10 @@ public class Post {
      */
     private String tags;
 
-
+    /**
+     * 所属分类ID（外键，关联 blog_category.id）
+     * 数据库字段：category_id BIGINT
+     */
+    private Long categoryId;
 
 }

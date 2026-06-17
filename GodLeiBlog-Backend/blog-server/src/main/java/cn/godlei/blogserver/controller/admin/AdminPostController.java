@@ -82,6 +82,7 @@ public class AdminPostController {
 
     /**
      * 管理端查询文章详情（用于编辑回显）
+     * 返回结构化分类路径与标签数组，保证"编辑看到的 = 实际存储的"。
      *
      * @param id 文章 ID
      * @return 文章详情
@@ -89,8 +90,7 @@ public class AdminPostController {
     @GetMapping("/get")
     public Result get(String id) {
         log.info("获取文章详情，id：{}", id);
-        Post post = postServer.get(id);
-        return Result.success(post);
+        return Result.success(postServer.getDetail(id));
     }
 
     /**
