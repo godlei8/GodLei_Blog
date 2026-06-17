@@ -22,6 +22,10 @@ node_modules/
 # Build outputs
 dist/
 build/
+out/
+
+# IDE
+*.iml
 
 # Logs
 *.log
@@ -30,5 +34,7 @@ logs/
 # MongoDB
 mongodb.zip
 
-# Server key
+# Server key（注意：实际文件名为下划线；旧的 server-key.pem 连字符写法不生效）
 server-key.pem
+server_key.pem
+*.pem
