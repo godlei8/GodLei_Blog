@@ -1,5 +1,6 @@
 package cn.godlei.blogserver.config;
 
+import cn.godlei.blogserver.service.site.storage.LocalStorageProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
@@ -16,28 +17,14 @@ public class UploadStaticResourceConfig implements WebMvcConfigurer {
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        String publicPath = normalizePublicPath(storageProperties.getLocal().getPublicPath());
-        String apiPublicPath = publicPath.startsWith("/api/") ? publicPath : "/api" + publicPath;
-        Path baseDir = Paths.get(storageProperties.getLocal().getBaseDir()).toAbsolutePath().normalize();
+        String publicPath = LocalStorageProvider.PUBLIC_PATH;            // /uploads
+        String apiPublicPath = "/api" + publicPath;                     // /api/uploads
+        Path baseDir = Paths.get(storageProperties.getDir()).toAbsolutePath().normalize();
         String location = baseDir.toUri().toString();
         if (!location.endsWith("/")) {
             location = location + "/";
         }
         registry.addResourceHandler(publicPath + "/**", apiPublicPath + "/**")
                 .addResourceLocations(location);
-    }
-
-    private String normalizePublicPath(String path) {
-        if (path == null || path.isBlank()) {
-            return "/uploads";
-        }
-        String normalized = path.trim();
-        if (!normalized.startsWith("/")) {
-            normalized = "/" + normalized;
-        }
-        if (normalized.endsWith("/")) {
-            normalized = normalized.substring(0, normalized.length() - 1);
-        }
-        return normalized;
     }
 }

@@ -36,12 +36,17 @@ public class CosStorageProvider implements StorageProvider {
 
     @Override
     public String store(byte[] content, String relativePath, String contentType) {
+        BlogStorageProperties.Cos cos = storageProperties.getCos();
+
         String key = relativePath.replace("\\", "/");
         if (key.startsWith("/")) {
             key = key.substring(1);
         }
-
-        BlogStorageProperties.Cos cos = storageProperties.getCos();
+        // 共享桶内用 prefix 为本项目命名空间，如 wolfbook/post-cover/...
+        String prefix = normalizeText(cos.getPrefix());
+        if (StringUtils.hasText(prefix)) {
+            key = trimSlashes(prefix) + "/" + key;
+        }
         ObjectMetadata metadata = new ObjectMetadata();
         metadata.setContentLength(content.length);
         if (StringUtils.hasText(contentType)) {
@@ -59,14 +64,11 @@ public class CosStorageProvider implements StorageProvider {
     }
 
     private String buildAccessUrl(String key) {
-        String baseUrl = normalizeText(storageProperties.getPublicBaseUrl());
-        if (!StringUtils.hasText(baseUrl)) {
-            baseUrl = normalizeText(storageProperties.getCos().getBaseUrl());
-        }
-        if (StringUtils.hasText(baseUrl)) {
-            return trimTrailingSlash(baseUrl) + "/" + key;
-        }
         BlogStorageProperties.Cos cos = storageProperties.getCos();
+        String baseUrl = normalizeText(cos.getPublicBaseUrl());
+        if (StringUtils.hasText(baseUrl)) {
+            return trimSlashes(baseUrl) + "/" + key;
+        }
         return String.format("https://%s.cos.%s.myqcloud.com/%s", cos.getBucket(), cos.getRegion(), key);
     }
 
@@ -89,7 +91,7 @@ public class CosStorageProvider implements StorageProvider {
         if (!StringUtils.hasText(cos.getSecretId()) || !StringUtils.hasText(cos.getSecretKey())
                 || !StringUtils.hasText(cos.getRegion()) || !StringUtils.hasText(cos.getBucket())) {
             throw new IllegalStateException(
-                    "COS 配置不完整，请设置 blog.storage.cos 的 secret-id/secret-key/region/bucket");
+                    "COS 配置不完整，请设置 upload.cos 的 secret-id/secret-key/region/bucket");
         }
         COSCredentials credentials = new BasicCOSCredentials(cos.getSecretId(), cos.getSecretKey());
         ClientConfig clientConfig = new ClientConfig(new Region(cos.getRegion()));
@@ -105,8 +107,11 @@ public class CosStorageProvider implements StorageProvider {
         }
     }
 
-    private String trimTrailingSlash(String value) {
+    private String trimSlashes(String value) {
         String normalized = value;
+        while (normalized.startsWith("/")) {
+            normalized = normalized.substring(1);
+        }
         while (normalized.endsWith("/")) {
             normalized = normalized.substring(0, normalized.length() - 1);
         }

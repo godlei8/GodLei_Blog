@@ -19,6 +19,10 @@ node_modules/
 .env.local
 .env.*.local
 
+# 本地配置（含明文密钥，勿入库）
+application-local.yml
+application-local.yaml
+
 # Build outputs
 dist/
 build/

@@ -1,12 +1,12 @@
 package cn.godlei.blogserver.service.site.storage;
 
 /**
- * 对象存储抽象：按 {@code blog.storage.mode} 选择具体实现（local / cos）。
+ * 对象存储抽象：按 {@code upload.provider} 选择具体实现（local / cos）。
  */
 public interface StorageProvider {
 
     /**
-     * 存储类型标识，对应 {@code blog.storage.mode}（如 "local"、"cos"）。
+     * 存储类型标识，对应 {@code upload.provider}（如 "local"、"cos"）。
      */
     String getType();
 

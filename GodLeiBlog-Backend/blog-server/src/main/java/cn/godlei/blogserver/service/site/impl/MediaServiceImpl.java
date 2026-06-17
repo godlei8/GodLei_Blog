@@ -112,13 +112,13 @@ public class MediaServiceImpl implements MediaService {
     }
 
     private StorageProvider resolveProvider() {
-        String mode = normalizeText(storageProperties.getMode()).toLowerCase(Locale.ROOT);
+        String mode = normalizeText(storageProperties.getProvider()).toLowerCase(Locale.ROOT);
         if (!StringUtils.hasText(mode)) {
             mode = "local";
         }
         StorageProvider provider = providers.get(mode);
         if (provider == null) {
-            throw new IllegalStateException("不支持的存储模式：" + mode + "，可选 " + providers.keySet());
+            throw new IllegalStateException("不支持的存储提供方：" + mode + "，可选 " + providers.keySet());
         }
         return provider;
     }
