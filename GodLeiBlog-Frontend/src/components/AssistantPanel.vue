@@ -88,6 +88,13 @@
               <span class="assistant-panel__eyebrow">AI Assistant</span>
               <h2>{{ assistantName }}</h2>
               <p>{{ assistantSubtitle }}</p>
+              <div class="assistant-panel__runtime" :class="`is-${runtimeIndicator.tone}`">
+                <span class="assistant-panel__runtime-dot" aria-hidden="true"></span>
+                <div class="assistant-panel__runtime-copy">
+                  <strong>{{ runtimeIndicator.title }}</strong>
+                  <small>{{ runtimeIndicator.detail }}</small>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -208,8 +215,13 @@
             @keydown="handleTextareaKeydown"
           ></textarea>
 
+          <div v-if="errorState" class="assistant-panel__status-card" :class="`is-${errorState.tone}`" role="status" aria-live="polite">
+            <strong>{{ errorState.title }}</strong>
+            <p>{{ errorState.detail }}</p>
+          </div>
+
           <div class="assistant-panel__composer-actions">
-            <span v-if="errorMessage" class="assistant-panel__error">{{ errorMessage }}</span>
+            <span class="assistant-panel__composer-hint">{{ composerHint }}</span>
             <button type="submit" :disabled="submitting || !draftMessage.trim()">
               {{ submitting ? '发送中...' : '发送' }}
             </button>
@@ -244,6 +256,7 @@ import { bindImageFallback, coverFallbackUrl, resolveImageUrl } from '@/utils/im
 import { resolveApiUrl } from '@/utils/apiBase'
 import { pageContextState } from '@/utils/pageContext'
 import { getDefaultSiteConfig, loadSiteConfig } from '@/utils/siteConfig'
+import { resolveAssistantErrorState, resolveRuntimeIndicator } from './assistantPanelState.mjs'
 
 const STORAGE_KEY = 'godlei-assistant-session'
 const FLOATING_KEY = 'godlei-assistant-floating'
@@ -293,6 +306,10 @@ const sessionId = ref(createSessionId())
 const panelRef = ref(null)
 const messagesRef = ref(null)
 const requestController = ref(null)
+const runtimeMeta = reactive({
+  model: '',
+  providerLabel: '',
+})
 const showIdleIntro = ref(false)
 const dockSide = ref('right')
 const snapPreviewSide = ref('')
@@ -335,6 +352,18 @@ const disclaimerHtml = computed(() => renderMarkdown(disclaimerContent.value))
 const dragging = computed(() => dragState.active)
 const shouldShowIdleIntro = computed(() => showIdleIntro.value && !open.value && !isMobile.value)
 const idleIntroText = computed(() => `我是${assistantName.value}，会帮你找内容、答问题，也能陪你理理思路。`)
+const runtimeIndicator = computed(() =>
+  resolveRuntimeIndicator({
+    model: runtimeMeta.model,
+    providerLabel: runtimeMeta.providerLabel,
+    submitting: submitting.value,
+  })
+)
+const errorState = computed(() => {
+  if (!errorMessage.value) return null
+  return resolveAssistantErrorState(errorMessage.value)
+})
+const composerHint = computed(() => (submitting.value ? '馨宝正在结合当前页面内容整理答案。' : 'Enter 发送，Shift + Enter 换行'))
 const shellStyle = computed(() => {
   const style = {
     '--assistant-snap-strength': snapProximity.value.toFixed(3),
@@ -362,6 +391,19 @@ const shellStyle = computed(() => {
 
 function createSessionId() {
   return `assistant-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`
+}
+
+function applyRuntimeMeta(payload = {}) {
+  const model = String(payload?.model || '').trim()
+  const providerLabel = String(payload?.providerLabel || payload?.provider || '').trim()
+
+  if (model) {
+    runtimeMeta.model = model
+  }
+
+  if (providerLabel) {
+    runtimeMeta.providerLabel = providerLabel
+  }
 }
 
 function createMessage(role, content = '') {
@@ -846,11 +888,15 @@ async function submitMessage(preset = '') {
       signal: controller.signal,
     })
 
-    if (!response.ok || !response.body) {
-      throw new Error(`请求失败：${response.status}`)
+    const responseErrorMessage = !response.ok || !response.body ? await resolveResponseErrorMessage(response) : ''
+    if (responseErrorMessage) {
+      throw new Error(responseErrorMessage)
     }
 
     await consumeSseStream(response.body, {
+      meta: (payload) => {
+        applyRuntimeMeta(payload)
+      },
       delta: (payload) => {
         const chunk = typeof payload === 'string' ? payload : payload?.content || ''
         if (!chunk) return
@@ -891,6 +937,30 @@ async function submitMessage(preset = '') {
     persistMessages()
     await nextTick(scrollMessagesToBottom)
   }
+}
+
+async function resolveResponseErrorMessage(response) {
+  const status = Number(response?.status || 0)
+
+  try {
+    const responseText = await response.text()
+    if (responseText) {
+      try {
+        const parsed = JSON.parse(responseText)
+        const parsedMessage = parsed?.message || parsed?.error || parsed?.detail
+        if (parsedMessage) {
+          return String(parsedMessage)
+        }
+      } catch (_) {
+        const trimmedText = responseText.trim()
+        if (trimmedText) {
+          return trimmedText
+        }
+      }
+    }
+  } catch (_) {}
+
+  return `Request failed with status code ${status || 500}`
 }
 
 async function consumeSseStream(stream, handlers) {
@@ -1512,6 +1582,67 @@ onBeforeUnmount(() => {
   line-height: 1.45;
 }
 
+.assistant-panel__runtime {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  width: min(100%, 260px);
+  padding: 10px 12px;
+  border-radius: 16px;
+  border: 1px solid rgba(214, 173, 92, 0.12);
+  background:
+    linear-gradient(180deg, rgba(255, 247, 234, 0.05), rgba(255, 247, 234, 0.015)),
+    rgba(14, 5, 8, 0.52);
+  box-shadow: inset 0 1px 0 rgba(246, 231, 198, 0.04);
+}
+
+.assistant-panel__runtime.is-active {
+  border-color: rgba(214, 173, 92, 0.24);
+  background:
+    linear-gradient(180deg, rgba(255, 247, 234, 0.07), rgba(255, 247, 234, 0.015)),
+    rgba(22, 8, 12, 0.7);
+}
+
+.assistant-panel__runtime-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(214, 173, 92, 0.82);
+  box-shadow: 0 0 0 0 rgba(214, 173, 92, 0.3);
+}
+
+.assistant-panel__runtime.is-active .assistant-panel__runtime-dot {
+  animation: assistant-stream-pulse 1.45s ease-out infinite;
+}
+
+.assistant-panel__runtime-copy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.assistant-panel__runtime-copy strong,
+.assistant-panel__runtime-copy small {
+  display: block;
+  margin: 0;
+}
+
+.assistant-panel__runtime-copy strong {
+  color: var(--theme-accent-text-strong);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.assistant-panel__runtime-copy small {
+  color: rgba(246, 231, 198, 0.68);
+  font-size: 11px;
+  line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .assistant-panel__actions,
 .assistant-empty__starters,
 .assistant-panel__composer-actions {
@@ -1853,6 +1984,51 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: space-between;
   gap: 14px;
+}
+
+.assistant-panel__composer-hint {
+  color: rgba(246, 231, 198, 0.62);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.assistant-panel__status-card {
+  display: grid;
+  gap: 4px;
+  padding: 11px 13px;
+  border-radius: 16px;
+  border: 1px solid rgba(214, 173, 92, 0.14);
+  background:
+    linear-gradient(180deg, rgba(255, 247, 234, 0.05), rgba(255, 247, 234, 0.015)),
+    rgba(16, 6, 10, 0.76);
+  box-shadow: inset 0 1px 0 rgba(246, 231, 198, 0.04);
+}
+
+.assistant-panel__status-card strong,
+.assistant-panel__status-card p {
+  margin: 0;
+}
+
+.assistant-panel__status-card strong {
+  color: var(--theme-accent-text-strong);
+  font-size: 12px;
+}
+
+.assistant-panel__status-card p {
+  color: rgba(246, 231, 198, 0.72);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.assistant-panel__status-card.is-warning {
+  border-color: rgba(214, 173, 92, 0.26);
+}
+
+.assistant-panel__status-card.is-danger {
+  border-color: rgba(192, 104, 82, 0.28);
+  background:
+    linear-gradient(180deg, rgba(255, 247, 234, 0.05), rgba(255, 247, 234, 0.015)),
+    rgba(25, 8, 10, 0.84);
 }
 
 .assistant-panel__composer button {

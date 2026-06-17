@@ -32,7 +32,6 @@ const defaultConfig = {
     name: '馨宝',
     subtitle: '站内 AI 助手',
     welcomeMessage: '你好，我是 **馨宝**。\n\n我可以结合当前页面内容，陪你一起梳理文章、动态和站点信息。',
-    systemPrompt: '你是 GodLei Blog 的站内 AI 助手“馨宝”。回答时请保持自然、准确、简洁；如果页面上下文不足或事实不确定，要明确说明，不要编造。',
     starterPrompts: [
       '帮我总结一下这页内容',
       '这篇内容最值得关注的重点是什么',
@@ -131,7 +130,6 @@ export function mergeSiteConfig(raw = {}) {
       name: normalizeText(source.assistant?.name, defaultConfig.assistant.name),
       subtitle: normalizeText(source.assistant?.subtitle, defaultConfig.assistant.subtitle),
       welcomeMessage: normalizeOptionalText(source.assistant?.welcomeMessage, defaultConfig.assistant.welcomeMessage),
-      systemPrompt: normalizeText(source.assistant?.systemPrompt, defaultConfig.assistant.systemPrompt),
       starterPrompts: normalizeStringList(source.assistant?.starterPrompts, defaultConfig.assistant.starterPrompts),
       disclaimer: normalizeOptionalText(source.assistant?.disclaimer, defaultConfig.assistant.disclaimer)
     }
