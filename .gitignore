@@ -24,6 +24,11 @@ dist/
 build/
 out/
 
+# 上传文件（本地存储）。迁移到 COS 并核对无误后，执行：
+#   git rm -r --cached GodLeiBlog-Backend/blog-server/uploads
+# 以停止跟踪（磁盘文件保留）。此忽略规则对已跟踪文件暂不生效。
+GodLeiBlog-Backend/blog-server/uploads/
+
 # IDE
 *.iml
 
