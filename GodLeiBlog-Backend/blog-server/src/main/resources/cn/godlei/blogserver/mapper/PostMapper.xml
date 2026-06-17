@@ -108,6 +108,12 @@
         LIMIT 1
     </select>
 
+    <update id="updateCoverUrl">
+        UPDATE blog_post
+        SET cover = #{newUrl}
+        WHERE cover = #{oldUrl}
+    </update>
+
     <select id="listByCategoryId" resultType="cn.godlei.blogpojo.entity.Post">
         SELECT
         id,

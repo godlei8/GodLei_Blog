@@ -65,4 +65,9 @@ public interface PostMapper {
      * 下一篇：比给定发布时间更晚、最接近的一篇。
      */
     PostNeighbor findNextByCreateTime(@Param("createTime") LocalDateTime createTime);
+
+    /**
+     * 将封面图地址从旧 URL 精确替换为新 URL（存储迁移用）。
+     */
+    int updateCoverUrl(@Param("oldUrl") String oldUrl, @Param("newUrl") String newUrl);
 }

@@ -28,4 +28,29 @@
             #{accessUrl}
         )
     </insert>
+
+    <select id="findByStorageType" resultType="cn.godlei.blogpojo.entity.MediaFile">
+        SELECT
+            id,
+            biz_type AS bizType,
+            storage_type AS storageType,
+            original_name AS originalName,
+            stored_name AS storedName,
+            extension,
+            content_type AS contentType,
+            file_size AS fileSize,
+            relative_path AS relativePath,
+            access_url AS accessUrl,
+            created_at AS createdAt
+        FROM blog_media_file
+        WHERE storage_type = #{storageType}
+        ORDER BY id ASC
+    </select>
+
+    <update id="updateLocation">
+        UPDATE blog_media_file
+        SET access_url = #{accessUrl},
+            storage_type = #{storageType}
+        WHERE id = #{id}
+    </update>
 </mapper>

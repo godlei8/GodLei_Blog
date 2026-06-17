@@ -23,4 +23,10 @@
             setting_desc = VALUES(setting_desc),
             updated_at = CURRENT_TIMESTAMP
     </insert>
+
+    <update id="replaceUrlInValues">
+        UPDATE blog_site_setting
+        SET setting_value = REPLACE(setting_value, #{oldUrl}, #{newUrl})
+        WHERE setting_value LIKE CONCAT('%', #{oldUrl}, '%')
+    </update>
 </mapper>
