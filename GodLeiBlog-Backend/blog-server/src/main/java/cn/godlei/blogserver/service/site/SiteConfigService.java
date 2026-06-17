@@ -6,5 +6,9 @@ public interface SiteConfigService {
 
     SiteConfigDTO getConfig();
 
-    void saveConfig(SiteConfigDTO config);
+    default void saveConfig(SiteConfigDTO config) {
+        saveConfig(config, true);
+    }
+
+    void saveConfig(SiteConfigDTO config, boolean preserveLegacyAssistantPrompt);
 }

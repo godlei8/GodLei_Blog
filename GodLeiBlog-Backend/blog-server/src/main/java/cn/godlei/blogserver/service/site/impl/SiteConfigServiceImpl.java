@@ -5,7 +5,9 @@ import cn.godlei.blogpojo.entity.SiteSetting;
 import cn.godlei.blogserver.mapper.SiteSettingMapper;
 import cn.godlei.blogserver.service.site.SiteConfigService;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -42,21 +44,45 @@ public class SiteConfigServiceImpl implements SiteConfigService {
     }
 
     @Override
-    public void saveConfig(SiteConfigDTO config) {
+    public void saveConfig(SiteConfigDTO config, boolean preserveLegacyAssistantPrompt) {
         SiteConfigDTO safeConfig = config == null ? SiteConfigDTO.emptyConfig() : config;
         safeConfig.normalize();
+
+        ObjectNode rootNode = objectMapper.valueToTree(safeConfig);
+        if (preserveLegacyAssistantPrompt) {
+            String legacyPrompt = getLegacyAssistantSystemPrompt();
+            if (StringUtils.hasText(legacyPrompt)) {
+                rootNode.with("assistant").put("systemPrompt", legacyPrompt);
+            }
+        }
 
         SiteSetting siteSetting = new SiteSetting();
         siteSetting.setSettingKey(SITE_CONFIG_KEY);
         siteSetting.setSettingDesc("站点首页与关于页配置");
-        siteSetting.setSettingValue(writeConfig(safeConfig));
+        siteSetting.setSettingValue(writeConfig(rootNode));
 
         siteSettingMapper.upsert(siteSetting);
     }
 
-    private String writeConfig(SiteConfigDTO config) {
+    private String getLegacyAssistantSystemPrompt() {
+        SiteSetting setting = siteSettingMapper.getByKey(SITE_CONFIG_KEY);
+        if (setting == null || !StringUtils.hasText(setting.getSettingValue())) {
+            return "";
+        }
         try {
-            return objectMapper.writeValueAsString(config);
+            JsonNode root = objectMapper.readTree(setting.getSettingValue());
+            JsonNode assistantNode = root.path("assistant");
+            JsonNode systemPromptNode = assistantNode.path("systemPrompt");
+            return systemPromptNode.isTextual() ? systemPromptNode.asText("").trim() : "";
+        } catch (Exception ex) {
+            log.warn("读取旧版 assistant.systemPrompt 失败，忽略保留逻辑", ex);
+            return "";
+        }
+    }
+
+    private String writeConfig(ObjectNode configNode) {
+        try {
+            return objectMapper.writeValueAsString(configNode);
         } catch (JsonProcessingException ex) {
             throw new IllegalStateException("序列化站点配置失败", ex);
         }

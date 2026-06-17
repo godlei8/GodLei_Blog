@@ -2,16 +2,21 @@ package cn.godlei.blogpojo.dto.response.assistant;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class AssistantRuntimeStatusDTO {
+@EqualsAndHashCode(callSuper = true)
+public class AssistantRuntimeStatusDTO extends AssistantRuntimeConfigDTO {
 
     private boolean enabled;
 
-    private String model;
+    private String providerLabel;
 
     private boolean apiKeyConfigured;
 
@@ -19,7 +24,7 @@ public class AssistantRuntimeStatusDTO {
 
     private String apiKeySource;
 
-    private String baseUrl;
+    private String runtimeSource;
 
-    private int maxRequestsPerMinute;
+    private List<AssistantProviderPresetDTO> presets = new ArrayList<>();
 }

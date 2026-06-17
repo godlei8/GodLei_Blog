@@ -11,11 +11,19 @@ public class AssistantProperties {
 
     private boolean enabled = true;
 
-    private String baseUrl = "https://api.minimaxi.com/v1";
+    private String provider = "deepseek";
+
+    private String baseUrl = "";
 
     private String apiKey = "";
 
-    private String model = "MiniMax-M2.7";
+    private String model = "deepseek-v4-pro";
+
+    private Double temperature = 0.7D;
+
+    private Double topP = 0.95D;
+
+    private Integer maxTokens;
 
     private long connectTimeoutMs = 10000L;
 
