@@ -1,6 +1,49 @@
 <script setup>
-import Header from './components/header.vue';
-import Footer from './components/Footer.vue';
+import { useRoute } from 'vue-router'
+import { watch } from 'vue'
+import Header from './components/header.vue'
+import Footer from './components/Footer.vue'
+import AssistantPanel from './components/AssistantPanel.vue'
+import { setPageContext } from '@/utils/pageContext'
+
+const route = useRoute()
+const ROUTE_TITLES = {
+  Home: '首页',
+  About: '关于',
+  Archive: '归档',
+  Moments: '朋友圈',
+  Links: '友链',
+  Comments: '留言',
+  Logs: '日志',
+  PostDetail: '文章',
+}
+
+function syncBasePageContext(currentRoute) {
+  const meta = currentRoute.meta || {}
+  setPageContext({
+    pageType: meta.pageType || 'page',
+    route: currentRoute.fullPath || currentRoute.path || '/',
+    title: meta.title || '',
+    summary: meta.summary || '',
+    contentExcerpt: '',
+    momentId: null,
+    currentMomentSummary: '',
+  })
+}
+
+function syncDocumentTitle(currentRoute) {
+  const title = ROUTE_TITLES[currentRoute.name] || ''
+  document.title = title ? `${title} | GodLeiBlog` : 'GodLeiBlog'
+}
+
+watch(
+  () => route.fullPath,
+  () => {
+    syncBasePageContext(route)
+    syncDocumentTitle(route)
+  },
+  { immediate: true }
+)
 </script>
 
 <template>
@@ -14,6 +57,7 @@ import Footer from './components/Footer.vue';
     </main>
 
     <Footer />
+    <AssistantPanel />
   </div>
 </template>
 
@@ -26,7 +70,6 @@ import Footer from './components/Footer.vue';
 
 .app-main {
   flex: 1;
-  /* 给固定头部让出空间，避免内容被遮挡 */
   padding-top: 68px;
 }
 </style>

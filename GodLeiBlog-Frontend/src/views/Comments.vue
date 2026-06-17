@@ -87,7 +87,7 @@
 </template>
 
 <script>
-import { fetchPosts } from '@/api';
+import { fetchMomentsList, fetchPosts } from '@/api';
 import { loadTwikoo, getTwikooEnvId } from '@/utils/twikoo';
 
 const CommentNode = {
@@ -147,6 +147,7 @@ export default {
       totalUrls: 0,
 
       _postsCache: [],
+      _momentsCache: [],
       siteCommentMap: new Map()
     };
   },
@@ -164,6 +165,10 @@ export default {
       (this._postsCache || []).forEach((p) => {
         const id = p && (p.id ?? p.postId);
         if (id || id === 0) urls.add(`/posts/${id}`);
+      });
+      (this._momentsCache || []).forEach((item) => {
+        const id = item && (item.id ?? item.momentId);
+        if (id || id === 0) urls.add(`/moments/${id}`);
       });
       return Array.from(urls);
     },
@@ -233,7 +238,17 @@ export default {
       if (!s) return s;
       // 友链页：历史评论聚合在 /link，但实际页面是 /links
       if (s === '/link') return '/links';
+      const momentMatch = s.match(/^\/moments\/(\d+)$/);
+      if (momentMatch) return `/moments#moment-${momentMatch[1]}`;
       return s;
+    },
+    formatCommentPathLabel(raw) {
+      const s = (raw || '').toString();
+      if (!s) return '未知页面';
+      if (s === '/link') return '/links';
+      const momentMatch = s.match(/^\/moments\/(\d+)$/);
+      if (momentMatch) return `/moments · 动态 #${momentMatch[1]}`;
+      return this.mapCommentPathToPagePath(s);
     },
     // Twikoo 拉取评论时，尝试的 url key 集合（兼容相对路径 / 完整 URL / 历史映射）
     twikooKeysForUrl(rawUrl) {
@@ -274,15 +289,52 @@ export default {
       if (/^https?:\/\//i.test(s)) return s;
       return `${origin}${s}`;
     },
+    async fetchAllMoments() {
+      const rows = [];
+      let currentPage = 1;
+      let totalCount = 0;
+      let guard = 0;
+
+      while (guard < 50) {
+        guard += 1;
+        const resp = await fetchMomentsList(currentPage, 100, 1);
+        const data = resp && resp.data ? resp.data : (resp || {});
+        const pageRows = Array.isArray(data.rows) ? data.rows : [];
+        totalCount = Number(data.total || totalCount || 0);
+        rows.push(...pageRows);
+        if (!pageRows.length || (totalCount && rows.length >= totalCount)) {
+          break;
+        }
+        currentPage += 1;
+      }
+
+      return rows;
+    },
     async loadAllSiteComments() {
       this.loadingAll = true;
       this.loadError = '';
       this.partialErrors = [];
       this.loadedUrls = 0;
       try {
-        const resp = await fetchPosts(1, 9999, 'update_time', 'desc');
-        const rows = resp && resp.data && Array.isArray(resp.data.rows) ? resp.data.rows : [];
+        const [postsResult, momentsResult] = await Promise.allSettled([
+          fetchPosts(1, 9999, 'update_time', 'desc'),
+          this.fetchAllMoments(),
+        ]);
+
+        const rows = postsResult.status === 'fulfilled' && postsResult.value && postsResult.value.data && Array.isArray(postsResult.value.data.rows)
+          ? postsResult.value.data.rows
+          : [];
         this._postsCache = rows;
+        this._momentsCache = momentsResult.status === 'fulfilled' && Array.isArray(momentsResult.value)
+          ? momentsResult.value
+          : [];
+
+        if (momentsResult.status === 'rejected') {
+          const message = momentsResult.reason && momentsResult.reason.message
+            ? momentsResult.reason.message
+            : '朋友圈动态索引加载失败';
+          this.partialErrors.push({ url: '/moments', message });
+        }
 
         const urls = this.siteUrls;
         this.totalUrls = urls.length;
@@ -417,7 +469,7 @@ export default {
       return await r.json();
     },
     displayPath(u) {
-      const s = this.mapCommentPathToPagePath((u || '').toString());
+      const s = this.formatCommentPathLabel((u || '').toString());
       if (!s) return '未知页面';
       try {
         const parsed = new URL(s, window.location.origin);

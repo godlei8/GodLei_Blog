@@ -1,0 +1,17 @@
+[Unit]
+Description=Twikoo Comment Service
+After=network.target mongod.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/twikoo
+ExecStart=/usr/bin/node server.js
+Restart=always
+RestartSec=5
+Environment=NODE_ENV=production
+Environment=LIMIT_PER_MINUTE=0
+Environment=LIMIT_PER_MINUTE_ALL=0
+
+[Install]
+WantedBy=multi-user.target

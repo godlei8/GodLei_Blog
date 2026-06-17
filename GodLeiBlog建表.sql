@@ -219,3 +219,31 @@ create table if not exists blog_log_entry
             on update cascade on delete cascade,
     unique uk_blog_log_entry_version_sort (version_id, sort)
 ) comment '站点更新日志条目表' collate = utf8mb4_unicode_ci;
+
+create table if not exists blog_moment
+(
+    id           bigint unsigned auto_increment primary key,
+    content      text                               not null comment '朋友圈文案',
+    location     varchar(255)                       null comment '定位信息',
+    publish_time datetime default CURRENT_TIMESTAMP not null comment '发布时间',
+    status       tinyint  default 0                 not null comment '状态：0-下架/草稿，1-上架',
+    created_at   datetime default CURRENT_TIMESTAMP not null,
+    updated_at   datetime default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP
+) comment '朋友圈动态主表' collate = utf8mb4_unicode_ci;
+
+create index idx_blog_moment_status_publish_time
+    on blog_moment (status, publish_time desc);
+
+create table if not exists blog_moment_media
+(
+    id        bigint unsigned auto_increment primary key,
+    moment_id bigint unsigned                     not null comment '动态ID',
+    media_url varchar(512)                        not null comment '图片地址',
+    sort      int      default 0                  not null comment '排序',
+    constraint fk_blog_moment_media_moment
+        foreign key (moment_id) references blog_moment (id)
+            on update cascade on delete cascade
+) comment '朋友圈动态媒体表' collate = utf8mb4_unicode_ci;
+
+create index idx_blog_moment_media_moment_sort
+    on blog_moment_media (moment_id, sort);

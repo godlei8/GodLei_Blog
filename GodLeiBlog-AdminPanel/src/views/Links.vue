@@ -1,97 +1,155 @@
 <template>
-  <div class="links-manage-page page-card">
-    <el-tabs v-model="activeTab">
-      <el-tab-pane label="友链分类管理" name="class">
-        <div class="page-toolbar">
-          <el-input
-            v-model="classKeyword"
-            placeholder="请输入分类名称"
-            clearable
-            class="toolbar-input"
-          />
-          <el-button type="primary" @click="fetchClassList">搜索</el-button>
-          <el-button type="success" @click="openClassAddDialog">新增分类</el-button>
-        </div>
+  <div class="links-manage-page page-stack">
+    <section class="page-card">
+      <div class="page-stat-grid">
+        <article class="page-stat-card">
+          <span class="page-stat-card__label">分类数量</span>
+          <strong class="page-stat-card__value">{{ classList.length }}</strong>
+          <span class="page-stat-card__hint">友链分类用于组织前台展示结构。</span>
+        </article>
 
-        <div class="table-wrap">
-          <el-table :data="classList" stripe style="width: 100%;">
-            <el-table-column prop="id" label="ID" width="90" />
-            <el-table-column prop="className" label="分类名称" min-width="180" />
-            <el-table-column prop="classDesc" label="分类描述" min-width="240" />
-            <el-table-column prop="sort" label="排序" width="100" />
-            <el-table-column label="操作" width="180">
-              <template #default="scope">
-                <div class="row-actions">
-                  <el-button size="small" type="primary" @click="openClassEditDialog(scope.row)">编辑</el-button>
-                  <el-button size="small" type="danger" @click="removeClass(scope.row)">删除</el-button>
-                </div>
-              </template>
-            </el-table-column>
-          </el-table>
-        </div>
-      </el-tab-pane>
+        <article class="page-stat-card">
+          <span class="page-stat-card__label">友链数量</span>
+          <strong class="page-stat-card__value">{{ linkList.length }}</strong>
+          <span class="page-stat-card__hint">当前列表会随分类与关键词过滤变化。</span>
+        </article>
 
-      <el-tab-pane label="友链管理" name="link">
-        <div class="page-toolbar">
-          <el-select
-            v-model="linkClassId"
-            clearable
-            placeholder="按分类筛选"
-            class="toolbar-select"
-          >
-            <el-option
-              v-for="item in classList"
-              :key="item.id"
-              :label="item.className"
-              :value="item.id"
-            />
-          </el-select>
-          <el-input
-            v-model="linkKeyword"
-            placeholder="请输入站点名称/链接"
-            clearable
-            class="toolbar-input"
-          />
-          <el-button type="primary" @click="fetchLinkList">搜索</el-button>
-          <el-button type="success" @click="openLinkAddDialog">新增友链</el-button>
-        </div>
+        <article class="page-stat-card">
+          <span class="page-stat-card__label">当前视图</span>
+          <strong class="page-stat-card__value links-stat-text">{{ activeTabLabel }}</strong>
+          <span class="page-stat-card__hint">在同一页内切换分类管理和友链管理。</span>
+        </article>
+      </div>
+    </section>
 
-        <div class="table-wrap">
-          <el-table :data="linkList" stripe style="width: 100%;">
-            <el-table-column prop="id" label="ID" width="90" />
-            <el-table-column prop="className" label="分类" width="140" />
-            <el-table-column prop="name" label="站点名称" min-width="160" />
-            <el-table-column label="头像" width="100">
-              <template #default="scope">
-                <el-image
-                  v-if="scope.row.avatar"
-                  :src="scope.row.avatar"
-                  fit="cover"
-                  style="width: 36px; height: 36px; border-radius: 50%;"
-                  :preview-src-list="[scope.row.avatar]"
-                  preview-teleported
+    <section class="page-card">
+      <el-tabs v-model="activeTab" class="links-tabs">
+        <el-tab-pane label="友链分类管理" name="class">
+          <div class="page-stack">
+            <div class="page-toolbar page-toolbar--split">
+              <div class="page-toolbar__group">
+                <el-input
+                  v-model="classKeyword"
+                  placeholder="输入分类名称"
+                  clearable
+                  class="toolbar-input"
+                  @keyup.enter="fetchClassList"
                 />
-                <span v-else>-</span>
-              </template>
-            </el-table-column>
-            <el-table-column prop="link" label="链接" min-width="220">
-              <template #default="scope">
-                <a :href="scope.row.link" target="_blank" rel="noopener noreferrer">{{ scope.row.link }}</a>
-              </template>
-            </el-table-column>
-            <el-table-column prop="sort" label="排序" width="90" />
-            <el-table-column label="操作" width="180">
-              <template #default="scope">
-                <div class="row-actions">
-                  <el-button size="small" type="primary" @click="openLinkEditDialog(scope.row)">编辑</el-button>
-                  <el-button size="small" type="danger" @click="removeLink(scope.row)">删除</el-button>
-                </div>
-              </template>
-            </el-table-column>
-          </el-table>
-        </div>
-      </el-tab-pane>
-    </el-tabs>
+              </div>
+
+              <div class="page-toolbar__group">
+                <el-button type="primary" @click="fetchClassList">搜索</el-button>
+                <el-button type="success" @click="openClassAddDialog">新增分类</el-button>
+              </div>
+            </div>
+
+            <div class="section-head">
+              <div class="section-head__copy">
+                <h3 class="section-head__title">分类列表</h3>
+                <p class="section-head__desc">管理友链分类名称、说明和排序，便于前台集中展示。</p>
+              </div>
+            </div>
+
+            <div class="table-shell">
+              <div class="table-wrap">
+                <el-table :data="classList" stripe style="width: 100%" empty-text="暂无友链分类">
+                  <el-table-column prop="id" label="ID" width="90" />
+                  <el-table-column prop="className" label="分类名称" min-width="180" />
+                  <el-table-column prop="classDesc" label="分类描述" min-width="240" show-overflow-tooltip />
+                  <el-table-column prop="sort" label="排序" width="100" />
+                  <el-table-column label="操作" width="180" fixed="right">
+                    <template #default="scope">
+                      <div class="row-actions">
+                        <el-button size="small" type="primary" @click="openClassEditDialog(scope.row)">编辑</el-button>
+                        <el-button size="small" type="danger" @click="removeClass(scope.row)">删除</el-button>
+                      </div>
+                    </template>
+                  </el-table-column>
+                </el-table>
+              </div>
+            </div>
+          </div>
+        </el-tab-pane>
+
+        <el-tab-pane label="友链管理" name="link">
+          <div class="page-stack">
+            <div class="page-toolbar page-toolbar--split">
+              <div class="page-toolbar__group">
+                <el-select
+                  v-model="linkClassId"
+                  clearable
+                  placeholder="按分类筛选"
+                  class="toolbar-select"
+                >
+                  <el-option
+                    v-for="item in classList"
+                    :key="item.id"
+                    :label="item.className"
+                    :value="item.id"
+                  />
+                </el-select>
+                <el-input
+                  v-model="linkKeyword"
+                  placeholder="输入站点名称或链接"
+                  clearable
+                  class="toolbar-input"
+                  @keyup.enter="fetchLinkList"
+                />
+              </div>
+
+              <div class="page-toolbar__group">
+                <el-button type="primary" @click="fetchLinkList">搜索</el-button>
+                <el-button type="success" @click="openLinkAddDialog">新增友链</el-button>
+              </div>
+            </div>
+
+            <div class="section-head">
+              <div class="section-head__copy">
+                <h3 class="section-head__title">友链列表</h3>
+                <p class="section-head__desc">维护友链的分类、站点信息、头像、描述和展示顺序。</p>
+              </div>
+            </div>
+
+            <div class="table-shell">
+              <div class="table-wrap">
+                <el-table :data="linkList" stripe style="width: 100%" empty-text="暂无友链数据">
+                  <el-table-column prop="id" label="ID" width="90" />
+                  <el-table-column prop="className" label="分类" width="140" />
+                  <el-table-column prop="name" label="站点名称" min-width="160" />
+                  <el-table-column label="头像" width="110">
+                    <template #default="scope">
+                      <el-image
+                        v-if="scope.row.avatar"
+                        :src="scope.row.avatar"
+                        fit="cover"
+                        class="link-avatar"
+                        :preview-src-list="[scope.row.avatar]"
+                        preview-teleported
+                      />
+                      <span v-else>-</span>
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="link" label="链接" min-width="220" show-overflow-tooltip>
+                    <template #default="scope">
+                      <a :href="scope.row.link" target="_blank" rel="noopener noreferrer">{{ scope.row.link }}</a>
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="sort" label="排序" width="90" />
+                  <el-table-column label="操作" width="180" fixed="right">
+                    <template #default="scope">
+                      <div class="row-actions">
+                        <el-button size="small" type="primary" @click="openLinkEditDialog(scope.row)">编辑</el-button>
+                        <el-button size="small" type="danger" @click="removeLink(scope.row)">删除</el-button>
+                      </div>
+                    </template>
+                  </el-table-column>
+                </el-table>
+              </div>
+            </div>
+          </div>
+        </el-tab-pane>
+      </el-tabs>
+    </section>
 
     <el-dialog :title="isClassEdit ? '编辑分类' : '新增分类'" v-model="classDialogVisible" width="520px">
       <el-form :model="classForm" label-width="90px">
@@ -130,13 +188,13 @@
           <el-input v-model="linkForm.link" placeholder="请输入站点链接" />
         </el-form-item>
         <el-form-item label="头像地址">
-          <el-input v-model="linkForm.avatar" placeholder="请输入头像URL（可选）" />
+          <el-input v-model="linkForm.avatar" placeholder="请输入头像 URL（可选）" />
         </el-form-item>
         <el-form-item label="站点描述">
           <el-input v-model="linkForm.descr" placeholder="请输入描述（可选）" type="textarea" :rows="3" />
         </el-form-item>
-        <el-form-item label="RSS地址">
-          <el-input v-model="linkForm.rss" placeholder="请输入RSS链接（可选）" />
+        <el-form-item label="RSS 地址">
+          <el-input v-model="linkForm.rss" placeholder="请输入 RSS 链接（可选）" />
         </el-form-item>
         <el-form-item label="排序">
           <el-input-number v-model="linkForm.sort" :min="0" :max="9999" />
@@ -191,6 +249,11 @@ export default {
         rss: '',
         sort: 0
       }
+    }
+  },
+  computed: {
+    activeTabLabel() {
+      return this.activeTab === 'class' ? '分类管理' : '友链管理'
     }
   },
   mounted() {
@@ -358,17 +421,14 @@ export default {
 </script>
 
 <style scoped>
-.links-manage-page {
-  padding: 16px;
+.links-stat-text {
+  font-size: 20px;
 }
 
-.toolbar-select {
-  width: 200px;
-}
-
-@media (max-width: 768px) {
-  .toolbar-select {
-    width: 100%;
-  }
+.link-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  border: 1px solid rgba(214, 173, 92, 0.12);
 }
 </style>

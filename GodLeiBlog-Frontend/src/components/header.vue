@@ -24,8 +24,8 @@
       <button
         class="hamburger-btn"
         :class="{ 'is-open': isMenuOpen }"
-        @click="toggleMenu"
         aria-label="切换导航菜单"
+        @click="toggleMenu"
       >
         <span></span>
         <span></span>
@@ -68,11 +68,12 @@ export default {
         { name: '首页', section: '' },
         { name: '关于', section: 'about' },
         { name: '归档', section: 'archive' },
+        { name: '朋友圈', section: 'moments' },
         { name: '友链', section: 'links' },
         { name: '留言', section: 'comments' },
-        { name: '日志', section: 'logs' }
+        { name: '日志', section: 'logs' },
       ],
-      isMenuOpen: false
+      isMenuOpen: false,
     }
   },
   mounted() {
@@ -148,8 +149,8 @@ export default {
       if (window.innerWidth > 768 && this.isMenuOpen) {
         this.isMenuOpen = false
       }
-    }
-  }
+    },
+  },
 }
 </script>
 

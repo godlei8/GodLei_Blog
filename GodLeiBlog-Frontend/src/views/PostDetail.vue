@@ -161,6 +161,7 @@ import yaml from 'highlight.js/lib/languages/yaml';
 import fm from 'front-matter';
 import 'highlight.js/styles/github-dark.css';
 import { bindImageFallback, coverFallbackUrl, resolveImageUrl } from '@/utils/image';
+import { setPageContext } from '@/utils/pageContext';
 
 [
   ['bash', bash],
@@ -509,10 +510,28 @@ export default {
       try {
         const response = await fetchPostById(this.id);
         this.post = response.data || {};
+        this.syncArticleContext();
       } catch (error) {
         console.error('加载文章失败:', error);
         this.post = {};
       }
+    },
+
+    // 向 AI 助手（馨宝）同步当前文章上下文
+    syncArticleContext() {
+      const plainBody = String(this.body || '')
+        .replace(/[`#>*_\-\[\]\(\)!]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+      setPageContext({
+        pageType: 'article',
+        route: this.$route.fullPath || `/posts/${this.id}`,
+        title: this.displayTitle || '文章',
+        summary: this.displayDescription || '当前文章正文与评论区',
+        contentExcerpt: plainBody.slice(0, 1200),
+        momentId: null,
+        currentMomentSummary: ''
+      });
     },
 
     async initTwikoo() {
