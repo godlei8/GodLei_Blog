@@ -608,12 +608,13 @@ export default {
 /* 布局 */
 .post-container {
   display: grid;
-  grid-template-columns: minmax(0, 760px) 264px;
-  gap: 36px;
-  max-width: 1180px;
+  /* 文章主体占主要宽度（~70%），右侧目录固定窄栏 */
+  grid-template-columns: minmax(0, 1fr) 236px;
+  gap: 32px;
+  width: 94vw;
+  max-width: 1720px;
   margin: 0 auto;
-  padding: 24px 24px 80px;
-  justify-content: center;
+  padding: 24px 0 80px;
   align-items: start;
 }
 
@@ -1052,13 +1053,16 @@ export default {
   position: relative;
 }
 .toc-sidebar {
-  position: sticky;
+  /* 固定常驻：始终停在视口右侧，不随文章滚动消失，方便随时点击导航 */
+  position: fixed;
   top: 84px;
+  right: max(3vw, calc((100vw - 1720px) / 2));
+  width: 236px;
   background: var(--theme-accent-panel-soft);
   border: 1px solid var(--theme-accent-border-soft);
   border-radius: 16px;
-  padding: 18px 16px;
-  max-height: calc(100vh - 110px);
+  padding: 16px 14px;
+  max-height: calc(100vh - 104px);
   overflow-y: auto;
   box-shadow: 0 16px 40px var(--theme-accent-shadow);
 }
@@ -1066,8 +1070,8 @@ export default {
   display: flex;
   align-items: center;
   gap: 9px;
-  font-size: 13px;
-  letter-spacing: 0.14em;
+  font-size: 12px;
+  letter-spacing: 0.12em;
   color: var(--theme-accent-text);
   font-weight: 700;
   margin-bottom: 14px;
@@ -1105,7 +1109,7 @@ export default {
   padding: 6px 10px 6px 8px;
 }
 .toc-item--lvl2 .toc-link {
-  font-size: 12.5px;
+  font-size: 12px;
   font-weight: 600;
   color: #cabdb0;
 }
@@ -1120,7 +1124,7 @@ export default {
 .toc-item--lvl4 .toc-link,
 .toc-item--lvl5 .toc-link,
 .toc-item--lvl6 .toc-link {
-  font-size: 11.5px;
+  font-size: 11px;
   color: #a5988f;
 }
 .toc-item--lvl3::before,
