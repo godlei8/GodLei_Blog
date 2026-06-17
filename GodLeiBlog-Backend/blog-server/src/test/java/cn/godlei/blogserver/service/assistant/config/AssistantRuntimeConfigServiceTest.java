@@ -127,6 +127,19 @@ class AssistantRuntimeConfigServiceTest {
             store.put(siteSetting.getSettingKey(), siteSetting);
         }
 
+        @Override
+        public int replaceUrlInValues(String oldUrl, String newUrl) {
+            int count = 0;
+            for (SiteSetting setting : store.values()) {
+                String value = setting.getSettingValue();
+                if (value != null && value.contains(oldUrl)) {
+                    setting.setSettingValue(value.replace(oldUrl, newUrl));
+                    count++;
+                }
+            }
+            return count;
+        }
+
         void put(String key, String value) {
             SiteSetting setting = new SiteSetting();
             setting.setSettingKey(key);
