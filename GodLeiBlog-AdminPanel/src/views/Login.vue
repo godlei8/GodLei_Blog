@@ -51,7 +51,7 @@
 import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { loginApi } from '@/api'
-import loginBackdrop from '@/assets/login-admin-bg-v2.jpg'
+import loginBackdrop from '@/assets/login-admin-bg-v4.jpg'
 
 const router = useRouter()
 const route = useRoute()
