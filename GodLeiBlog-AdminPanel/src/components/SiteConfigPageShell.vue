@@ -102,8 +102,8 @@ defineProps({
   display: inline-flex;
   padding: 5px 10px;
   border-radius: 999px;
-  background: rgba(214, 173, 92, 0.14);
-  color: #8a6427;
+  background: var(--admin-accent-tint);
+  color: var(--admin-accent);
   font-size: 12px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -132,7 +132,7 @@ defineProps({
   display: inline-flex;
   padding: 6px 12px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.9);
+  background: var(--admin-panel);
   color: var(--admin-text);
   font-size: 13px;
   font-weight: 600;
@@ -144,8 +144,8 @@ defineProps({
 }
 
 .settings-status.is-busy {
-  background: rgba(214, 173, 92, 0.18);
-  color: #8a6427;
+  background: var(--admin-accent-tint);
+  color: var(--admin-accent);
 }
 
 .settings-hero__meta-text {
@@ -174,7 +174,7 @@ defineProps({
   padding: 14px;
   border-radius: 18px;
   border: 1px solid var(--admin-border-soft);
-  background: rgba(255, 255, 255, 0.9);
+  background: var(--admin-panel);
 }
 
 .settings-summary__card span {

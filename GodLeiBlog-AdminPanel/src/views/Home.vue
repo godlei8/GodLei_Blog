@@ -504,7 +504,7 @@ export default {
   padding: 16px 18px;
   border-radius: 18px;
   border: 1px solid var(--admin-border-soft);
-  background: rgba(255, 255, 255, 0.9);
+  background: var(--admin-panel);
   box-shadow: 0 12px 22px var(--admin-shadow);
 }
 
@@ -541,8 +541,8 @@ export default {
   min-height: 116px;
   overflow: hidden;
   border-radius: 18px;
-  border: 1px solid rgba(214, 173, 92, 0.12);
-  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid var(--admin-border-soft);
+  background: var(--admin-panel);
 }
 
 .metric-card :deep(.el-card__body) {
@@ -556,9 +556,11 @@ export default {
 }
 
 .metric-value {
+  font-family: var(--admin-mono);
   font-size: 28px;
-  font-weight: 700;
-  color: var(--admin-accent);
+  font-weight: 600;
+  letter-spacing: -0.5px;
+  color: var(--admin-text);
 }
 
 .metric-extra {
@@ -570,8 +572,8 @@ export default {
 .chart-card,
 .comments-card {
   border-radius: 18px;
-  border: 1px solid rgba(214, 173, 92, 0.12);
-  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid var(--admin-border-soft);
+  background: var(--admin-panel);
 }
 
 .chart-card :deep(.el-card__header),

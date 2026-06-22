@@ -67,7 +67,7 @@ export default {
 .current-info {
   margin: 12px 0;
   padding: 10px 12px;
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.98), rgba(247, 239, 228, 0.98));
+  background: var(--admin-panel-soft);
   border: 1px solid var(--admin-border);
   border-radius: 14px;
 }
@@ -104,7 +104,7 @@ export default {
 .date {
   width: 130px;
   text-align: right;
-  color: var(--admin-gold-soft);
+  color: var(--admin-accent);
   font-weight: 600;
   padding-right: 10px;
   flex: none;
@@ -112,7 +112,7 @@ export default {
 
 .content {
   flex: 1;
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.98), rgba(247, 239, 228, 0.96));
+  background: var(--admin-panel);
   border: 1px solid var(--admin-border);
   border-radius: 14px;
   padding: 12px 14px;
@@ -121,7 +121,7 @@ export default {
 
 .content.current {
   border-color: var(--admin-border-strong);
-  background: linear-gradient(145deg, rgba(255, 248, 239, 0.98), rgba(239, 223, 202, 0.98), rgba(255, 255, 255, 0.96));
+  background: var(--admin-accent-tint);
 }
 
 .content h2 {

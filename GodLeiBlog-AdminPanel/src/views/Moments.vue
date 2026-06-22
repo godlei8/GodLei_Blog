@@ -448,7 +448,7 @@ onMounted(() => {
   padding: 18px;
   border-radius: 24px;
   border: 1px solid var(--admin-border-soft);
-  background: rgba(255, 255, 255, 0.72);
+  background: var(--admin-panel-soft);
 }
 
 .moments-list {
@@ -462,8 +462,8 @@ onMounted(() => {
   text-align: left;
   padding: 16px;
   border-radius: 18px;
-  border: 1px solid rgba(214, 173, 92, 0.12);
-  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid var(--admin-border-soft);
+  background: var(--admin-panel-soft);
   cursor: pointer;
 }
 
@@ -544,8 +544,8 @@ onMounted(() => {
 .moments-preview-card {
   padding: 16px;
   border-radius: 20px;
-  border: 1px solid rgba(214, 173, 92, 0.12);
-  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid var(--admin-border-soft);
+  background: var(--admin-panel-soft);
 }
 
 .moments-media-empty {

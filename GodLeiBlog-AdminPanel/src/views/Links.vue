@@ -429,6 +429,6 @@ export default {
   width: 42px;
   height: 42px;
   border-radius: 12px;
-  border: 1px solid rgba(214, 173, 92, 0.12);
+  border: 1px solid var(--admin-border-soft);
 }
 </style>

@@ -45,8 +45,8 @@
   gap: 4px;
   padding: 10px 12px;
   border-radius: 14px;
-  border: 1px solid rgba(214, 173, 92, 0.14);
-  background: rgba(250, 246, 238, 0.84);
+  border: 1px solid var(--admin-border);
+  background: var(--admin-panel-soft);
 }
 
 .settings-name-preview strong {
@@ -107,8 +107,8 @@
   gap: 10px;
   padding: 12px;
   border-radius: 16px;
-  border: 1px solid rgba(214, 173, 92, 0.14);
-  background: rgba(250, 246, 238, 0.84);
+  border: 1px solid var(--admin-border);
+  background: var(--admin-panel-soft);
 }
 
 .settings-avatar-preview--compact {
@@ -166,8 +166,8 @@
   gap: 12px;
   padding: 14px;
   border-radius: 18px;
-  border: 1px solid rgba(214, 173, 92, 0.14);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(250, 246, 238, 0.84));
+  border: 1px solid var(--admin-border);
+  background: var(--admin-panel-soft);
 }
 
 .settings-subsection-card__head {
@@ -195,8 +195,8 @@
   gap: 8px;
   padding: 10px 12px;
   border-radius: 14px;
-  border: 1px solid rgba(214, 173, 92, 0.14);
-  background: rgba(250, 246, 238, 0.84);
+  border: 1px solid var(--admin-border);
+  background: var(--admin-panel-soft);
 }
 
 .settings-preview__notice-mini strong {
@@ -287,8 +287,8 @@
   gap: 8px;
   padding: 12px;
   border-radius: 16px;
-  border: 1px solid rgba(214, 173, 92, 0.12);
-  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid var(--admin-border-soft);
+  background: var(--admin-panel-soft);
 }
 
 .settings-social-item {
@@ -364,8 +364,8 @@
   display: inline-flex;
   padding: 5px 10px;
   border-radius: 999px;
-  background: rgba(214, 173, 92, 0.14);
-  color: #8a6427;
+  background: var(--admin-accent-tint);
+  color: var(--admin-accent);
   font-size: 12px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -416,8 +416,8 @@
   gap: 10px;
   padding: 14px;
   border-radius: 18px;
-  background: rgba(255, 255, 255, 0.84);
-  border: 1px solid rgba(214, 173, 92, 0.12);
+  background: var(--admin-panel-soft);
+  border: 1px solid var(--admin-border-soft);
 }
 
 .settings-preview__assistant.is-disabled {
@@ -446,8 +446,8 @@
 .settings-runtime__badge {
   padding: 6px 10px;
   border-radius: 999px;
-  background: rgba(214, 173, 92, 0.12);
-  color: #8a6427;
+  background: var(--admin-accent-tint);
+  color: var(--admin-accent);
   font-size: 12px;
 }
 

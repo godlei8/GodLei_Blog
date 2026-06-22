@@ -374,7 +374,7 @@ export default {
 
 .add-article h2 {
   margin: 0 0 8px;
-  background-image: linear-gradient(110deg, #fff5e0 0%, #edd39d 42%, #d6ad5c 100%);
+  background-image: linear-gradient(110deg, var(--admin-accent-strong), var(--admin-accent));
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -422,7 +422,7 @@ export default {
 }
 
 .editor-right {
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.98), rgba(248, 240, 229, 0.96));
+  background: var(--admin-panel);
   color: var(--admin-text);
 }
 

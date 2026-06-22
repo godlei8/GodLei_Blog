@@ -191,8 +191,8 @@ export default {
   justify-content: center;
   overflow: hidden;
   border-radius: 14px;
-  border: 1px solid rgba(214, 173, 92, 0.12);
-  background: rgba(250, 246, 239, 0.92);
+  border: 1px solid var(--admin-border-soft);
+  background: var(--admin-panel-soft);
   color: var(--admin-text-soft);
   font-size: 12px;
 }

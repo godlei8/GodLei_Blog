@@ -681,7 +681,7 @@ onMounted(() => {
 }
 
 .assistant-settings__tabs :deep(.el-tabs__nav-wrap::after) {
-  background: rgba(214, 173, 92, 0.14);
+  background: var(--admin-border);
 }
 
 .assistant-settings__tabs :deep(.el-tabs__item) {
@@ -689,19 +689,19 @@ onMounted(() => {
 }
 
 .assistant-settings__tabs :deep(.el-tabs__item.is-active) {
-  color: #8a6427;
+  color: var(--admin-accent);
 }
 
 .assistant-settings__tabs :deep(.el-tabs__active-bar) {
-  background: linear-gradient(90deg, #a94b5d, #d6ad5c);
+  background: var(--admin-accent);
 }
 
 .assistant-settings__badge {
   display: inline-flex;
   padding: 6px 11px;
   border-radius: 999px;
-  background: rgba(214, 173, 92, 0.12);
-  color: #8a6427;
+  background: var(--admin-accent-tint);
+  color: var(--admin-accent);
   font-size: 12px;
   font-weight: 600;
 }
@@ -736,8 +736,8 @@ onMounted(() => {
   margin-top: 14px;
   padding: 14px;
   border-radius: 16px;
-  border: 1px solid rgba(214, 173, 92, 0.16);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(250, 246, 238, 0.88));
+  border: 1px solid var(--admin-border-soft);
+  background: var(--admin-panel-soft);
 }
 
 .assistant-settings__test-result strong,

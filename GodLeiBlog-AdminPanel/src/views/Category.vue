@@ -273,8 +273,7 @@ export default {
   border: 1px solid var(--admin-border);
   border-radius: 14px;
   padding: 12px;
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(247, 239, 228, 0.98));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.92);
+  background: var(--admin-panel-soft);
 }
 
 .tree-header {
