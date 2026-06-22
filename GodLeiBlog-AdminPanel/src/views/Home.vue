@@ -1,93 +1,72 @@
 <template>
   <div class="dashboard">
-    <div class="dashboard-head">
-      <div class="head-left">
-        <h2 class="head-title">管理控制台</h2>
-        <div class="head-sub">访问流量（PV/UV） + 最近评论</div>
-      </div>
+    <div class="dash-controls">
+      <span class="dash-controls__hint">全站访问流量与最新互动</span>
+      <span class="spacer"></span>
+      <el-select v-model="days" size="small" class="days-select" @change="loadDashboard">
+        <el-option :value="7" label="最近 7 天" />
+        <el-option :value="14" label="最近 14 天" />
+        <el-option :value="30" label="最近 30 天" />
+      </el-select>
+      <el-button size="small" :loading="loadingDashboard" @click="loadDashboard">刷新流量</el-button>
+    </div>
 
-      <div class="head-right">
-        <el-select v-model="days" size="small" class="days-select" @change="loadDashboard">
-          <el-option :value="7" label="最近 7 天" />
-          <el-option :value="14" label="最近 14 天" />
-          <el-option :value="30" label="最近 30 天" />
-        </el-select>
-        <el-button type="primary" size="small" :loading="loadingDashboard" @click="loadDashboard">
-          刷新流量
-        </el-button>
+    <div class="stat-grid">
+      <div class="stat">
+        <div class="stat__label">总访问量 · PV</div>
+        <div class="stat__value">{{ (pageViews || 0).toLocaleString() }}</div>
+        <div class="stat__hint">今日 PV {{ todayPoint.pageViews || 0 }}</div>
+      </div>
+      <div class="stat">
+        <div class="stat__label">总访客量 · UV</div>
+        <div class="stat__value">{{ (uniqueVisitors || 0).toLocaleString() }}</div>
+        <div class="stat__hint">今日 UV {{ todayPoint.uniqueVisitors || 0 }}</div>
+      </div>
+      <div class="stat">
+        <div class="stat__label">今日访问 · PV</div>
+        <div class="stat__value">{{ todayPoint.pageViews || 0 }}</div>
+        <div class="stat__hint">最近 {{ days }} 天趋势见下方</div>
+      </div>
+      <div class="stat">
+        <div class="stat__label">今日访客 · UV</div>
+        <div class="stat__value">{{ todayPoint.uniqueVisitors || 0 }}</div>
+        <div class="stat__hint">最近 {{ days }} 天趋势见下方</div>
       </div>
     </div>
 
-    <div class="metric-row">
-      <el-card shadow="never" class="metric-card">
-        <div class="metric-label">总访问量（PV）</div>
-        <div class="metric-value">{{ pageViews || 0 }}</div>
-        <div class="metric-extra">今日 PV：{{ todayPoint.pageViews }}</div>
-      </el-card>
-
-      <el-card shadow="never" class="metric-card">
-        <div class="metric-label">总访客量（UV）</div>
-        <div class="metric-value">{{ uniqueVisitors || 0 }}</div>
-        <div class="metric-extra">今日 UV：{{ todayPoint.uniqueVisitors }}</div>
-      </el-card>
+    <div class="chart-grid">
+      <div class="panel">
+        <div class="panel__head"><h2>PV 历史（按天）</h2></div>
+        <div class="panel__body"><div ref="pvChartRef" class="chart"></div></div>
+      </div>
+      <div class="panel">
+        <div class="panel__head"><h2>UV 历史（按天）</h2></div>
+        <div class="panel__body"><div ref="uvChartRef" class="chart"></div></div>
+      </div>
     </div>
 
-    <el-row :gutter="16" class="chart-row">
-      <el-col :span="12">
-        <el-card shadow="never" class="chart-card">
-          <template #header>
-            <span>PV 历史（按天）</span>
-          </template>
-          <div ref="pvChartRef" class="chart"></div>
-        </el-card>
-      </el-col>
-      <el-col :span="12">
-        <el-card shadow="never" class="chart-card">
-          <template #header>
-            <span>UV 历史（按天）</span>
-          </template>
-          <div ref="uvChartRef" class="chart"></div>
-        </el-card>
-      </el-col>
-    </el-row>
-
-    <el-card shadow="never" class="comments-card">
-      <template #header>
-        <div class="comments-head">
-          <span>最新评论列表</span>
-          <div class="head-actions">
-            <el-button type="text" size="small" :loading="loadingComments" @click="loadLatestComments">
-              刷新
-            </el-button>
-          </div>
+    <div class="panel">
+      <div class="panel__head">
+        <h2>最新评论</h2>
+        <el-button type="text" size="small" :loading="loadingComments" @click="loadLatestComments">刷新</el-button>
+      </div>
+      <div class="panel__body">
+        <div v-if="loadingComments" class="loading-wrap">
+          <el-skeleton :rows="6" animated />
         </div>
-      </template>
-
-      <div v-if="loadingComments" class="loading-wrap">
-        <el-skeleton :rows="8" animated />
+        <div v-else-if="commentsError" class="comments-error">{{ commentsError }}</div>
+        <el-table v-else :data="latestComments" height="300" style="width: 100%;" empty-text="暂无最新评论数据">
+          <el-table-column prop="nick" label="昵称" width="130" />
+          <el-table-column prop="timeText" label="时间" width="190" />
+          <el-table-column prop="page" label="页面" width="180" />
+          <el-table-column label="内容">
+            <template #default="scope">
+              <div class="comment-text" :title="scope.row.text">{{ scope.row.text }}</div>
+            </template>
+          </el-table-column>
+        </el-table>
       </div>
-
-      <div v-else-if="commentsError" class="comments-error">
-        {{ commentsError }}
-      </div>
-
-      <el-table v-else :data="latestComments" height="320" style="width: 100%;">
-        <el-table-column prop="nick" label="昵称" width="130" />
-        <el-table-column prop="timeText" label="时间" width="190" />
-        <el-table-column prop="page" label="页面" width="180" />
-        <el-table-column label="内容">
-          <template #default="scope">
-            <div class="comment-text" :title="scope.row.text">
-              {{ scope.row.text }}
-            </div>
-          </template>
-        </el-table-column>
-      </el-table>
-
-      <div v-if="!loadingComments && !commentsError && !latestComments.length" class="empty-tips">
-        暂无最新评论数据
-      </div>
-    </el-card>
+    </div>
   </div>
 </template>
 
@@ -243,38 +222,46 @@ export default {
       const pvData = this.history.map((i) => i.pageViews || 0)
       const uvData = this.history.map((i) => i.uniqueVisitors || 0)
 
+      const axisLabel = { color: '#9a958a', fontFamily: 'JetBrains Mono, monospace', fontSize: 10 }
+      const splitLine = { lineStyle: { color: '#efece4' } }
+      const baseGrid = { left: 6, right: 12, bottom: 0, top: 12, containLabel: true }
+
       const pvOption = {
         tooltip: { trigger: 'axis' },
-        grid: { left: 10, right: 10, bottom: 0, top: 10, containLabel: true },
-        xAxis: { type: 'category', data: xData, boundaryGap: false, axisLabel: { color: 'rgba(104, 74, 46, 0.66)' } },
-        yAxis: { type: 'value', axisLabel: { color: 'rgba(104, 74, 46, 0.66)' } },
+        grid: baseGrid,
+        xAxis: { type: 'category', data: xData, boundaryGap: false, axisTick: { show: false }, axisLine: { lineStyle: { color: '#e7e3da' } }, axisLabel },
+        yAxis: { type: 'value', minInterval: 1, splitLine, axisLabel },
         series: [
           {
             name: 'PV',
             type: 'line',
             data: pvData,
             smooth: true,
-            lineStyle: { width: 2, color: '#d6ad5c' },
-            itemStyle: { color: '#d6ad5c' },
-            areaStyle: { color: 'rgba(214, 173, 92, 0.18)', opacity: 0.18 },
+            symbol: 'circle',
+            symbolSize: 5,
+            lineStyle: { width: 2.4, color: '#a9772b' },
+            itemStyle: { color: '#a9772b', borderColor: '#fff', borderWidth: 1.5 },
+            areaStyle: { color: 'rgba(169, 119, 43, 0.12)' },
           },
         ],
       }
 
       const uvOption = {
         tooltip: { trigger: 'axis' },
-        grid: { left: 10, right: 10, bottom: 0, top: 10, containLabel: true },
-        xAxis: { type: 'category', data: xData, boundaryGap: false, axisLabel: { color: 'rgba(104, 74, 46, 0.66)' } },
-        yAxis: { type: 'value', axisLabel: { color: 'rgba(104, 74, 46, 0.66)' } },
+        grid: baseGrid,
+        xAxis: { type: 'category', data: xData, boundaryGap: false, axisTick: { show: false }, axisLine: { lineStyle: { color: '#e7e3da' } }, axisLabel },
+        yAxis: { type: 'value', minInterval: 1, splitLine, axisLabel },
         series: [
           {
             name: 'UV',
             type: 'line',
             data: uvData,
             smooth: true,
-            lineStyle: { width: 2, color: '#9a4e40' },
-            itemStyle: { color: '#9a4e40' },
-            areaStyle: { color: 'rgba(154, 78, 64, 0.18)', opacity: 0.18 },
+            symbol: 'circle',
+            symbolSize: 5,
+            lineStyle: { width: 2.4, color: '#7a1d2d' },
+            itemStyle: { color: '#7a1d2d', borderColor: '#fff', borderWidth: 1.5 },
+            areaStyle: { color: 'rgba(122, 29, 45, 0.10)' },
           },
         ],
       }
@@ -640,4 +627,23 @@ export default {
     height: 260px;
   }
 }
+
+/* ===== 重设计：扁平统计卡 + 面板（对齐 mockup） ===== */
+.dashboard { gap: 16px; }
+.dash-controls { display: flex; align-items: center; gap: 8px; }
+.dash-controls__hint { color: var(--admin-text-soft); font-size: 12.5px; }
+.dash-controls .spacer { flex: 1; }
+.stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+.stat { background: var(--admin-panel); border: 1px solid var(--admin-border); border-radius: 10px; padding: 15px 16px; }
+.stat__label { font-size: 12px; color: var(--admin-text-muted); }
+.stat__value { font-family: var(--admin-mono); font-size: 28px; font-weight: 600; letter-spacing: -0.5px; color: var(--admin-text); margin-top: 10px; line-height: 1.1; }
+.stat__hint { font-family: var(--admin-mono); font-size: 11.5px; color: var(--admin-text-soft); margin-top: 6px; }
+.chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.panel { background: var(--admin-panel); border: 1px solid var(--admin-border); border-radius: 10px; }
+.panel__head { display: flex; align-items: center; justify-content: space-between; padding: 13px 16px; border-bottom: 1px solid var(--admin-border); }
+.panel__head h2 { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 13.5px; font-weight: 600; }
+.panel__head h2::before { content: ""; width: 3px; height: 13px; background: var(--admin-accent); border-radius: 2px; }
+.panel__body { padding: 16px; }
+@media (max-width: 900px) { .stat-grid { grid-template-columns: repeat(2, 1fr); } .chart-grid { grid-template-columns: 1fr; } }
+@media (max-width: 600px) { .stat-grid { grid-template-columns: 1fr; } }
 </style>
