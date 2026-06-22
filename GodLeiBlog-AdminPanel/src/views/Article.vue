@@ -16,39 +16,12 @@
         </div>
 
         <div class="page-toolbar__group">
-          <el-button type="primary" @click="handleSearch">搜索</el-button>
-          <el-button type="success" @click="goToAddArticle">新增文章</el-button>
+          <el-button @click="handleSearch">搜索</el-button>
+          <el-button type="primary" @click="goToAddArticle">＋ 新增文章</el-button>
         </div>
       </div>
 
-      <div class="page-stat-grid">
-        <article class="page-stat-card">
-          <span class="page-stat-card__label">文章总数</span>
-          <strong class="page-stat-card__value">{{ total }}</strong>
-          <span class="page-stat-card__hint">当前列表会随搜索关键词实时刷新。</span>
-        </article>
-
-        <article class="page-stat-card">
-          <span class="page-stat-card__label">当前页码</span>
-          <strong class="page-stat-card__value">{{ currentPage }}</strong>
-          <span class="page-stat-card__hint">共 {{ totalPages }} 页</span>
-        </article>
-
-        <article class="page-stat-card">
-          <span class="page-stat-card__label">筛选状态</span>
-          <strong class="page-stat-card__value article-stat-text">{{ searchState }}</strong>
-          <span class="page-stat-card__hint">当前展示 {{ currentRangeText }}</span>
-        </article>
-      </div>
-    </section>
-
-    <section class="page-card">
-      <div class="section-head">
-        <div class="section-head__copy">
-          <h3 class="section-head__title">文章列表</h3>
-          <p class="section-head__desc">支持按标题搜索、快速编辑和删除当前文章。</p>
-        </div>
-      </div>
+      <div class="article-count mono">共 {{ total }} 篇</div>
 
       <div class="table-shell">
         <div class="table-wrap">
@@ -201,6 +174,12 @@ export default {
 </script>
 
 <style scoped>
+.article-count {
+  color: var(--admin-text-soft);
+  font-size: 12px;
+  margin: 0 0 12px;
+}
+
 .cover-thumb {
   width: 132px;
   height: 76px;

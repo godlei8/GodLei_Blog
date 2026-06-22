@@ -22,16 +22,28 @@
   --admin-display: "Space Grotesk", "PingFang SC", "Microsoft YaHei", sans-serif;
   --admin-mono: "JetBrains Mono", ui-monospace, "Cascadia Code", Consolas, monospace;
 
-  /* Element Plus 主题：主色用绯红 */
-  --el-color-primary: #7a1d2d;
-  --el-color-primary-light-3: #9a3344;
-  --el-color-primary-light-5: #b56472;
-  --el-color-primary-light-7: #d8a7b0;
-  --el-color-primary-light-8: #e9cdd2;
-  --el-color-primary-light-9: #f5e6e9;
-  --el-color-primary-dark-2: #62141f;
   --el-border-radius-base: 8px;
   --el-font-size-base: 14px;
+}
+
+/* Element Plus 主题：主色用绯红。!important 以压过 EP 运行时注入的默认蓝色变量 */
+:root,
+html {
+  --el-color-primary: #7a1d2d !important;
+  --el-color-primary-light-3: #9a3344 !important;
+  --el-color-primary-light-5: #b56472 !important;
+  --el-color-primary-light-7: #d8a7b0 !important;
+  --el-color-primary-light-8: #e9cdd2 !important;
+  --el-color-primary-light-9: #f5e6e9 !important;
+  --el-color-primary-dark-2: #62141f !important;
+  /* success/绿 也并入金色系，避免“新增”按钮跳成绿色 */
+  --el-color-success: #a9772b !important;
+  --el-color-success-light-3: #c19a5a !important;
+  --el-color-success-light-5: #d4b783 !important;
+  --el-color-success-light-7: #e7d4b0 !important;
+  --el-color-success-light-8: #f0e4cd !important;
+  --el-color-success-light-9: #f7f0e3 !important;
+  --el-color-success-dark-2: #8a5e1d !important;
 }
 
 #app {
