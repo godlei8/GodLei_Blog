@@ -29,9 +29,8 @@ const ROUTE_TITLES = {
   Contact: '联系信息'
 }
 
-const pageEyebrow = computed(() => route.meta?.eyebrow || 'Admin')
 const pageTitle = computed(() => route.meta?.title || '管理台')
-const pageDescription = computed(() => route.meta?.description || '保持站点内容、配置与运营数据的统一更新。')
+const pageDescription = computed(() => route.meta?.description || '')
 
 const updateViewportState = () => {
   isMobile.value = window.innerWidth <= 768
@@ -104,34 +103,16 @@ onBeforeUnmount(() => {
       <template v-if="showAside">
         <div class="app-main-inner">
           <header class="shell-topbar">
-            <div class="shell-topbar__left">
-              <button v-if="isMobile" class="shell-icon-btn" type="button" @click="toggleMobileMenu">菜单</button>
-              <div class="shell-brand">
-                <span class="shell-brand__eyebrow">GodLei Blog Admin</span>
-                <strong>内容管理</strong>
-              </div>
-            </div>
-
-            <div class="shell-topbar__actions">
-              <button class="shell-text-btn" type="button" @click="openSitePreview">打开前台</button>
-              <button class="shell-primary-btn" type="button" @click="logout">退出登录</button>
-            </div>
+            <button v-if="isMobile" class="shell-icon-btn" type="button" @click="toggleMobileMenu">☰ 菜单</button>
+            <div class="shell-spacer"></div>
+            <button class="shell-text-btn" type="button" @click="openSitePreview">查看前台 ↗</button>
+            <button class="shell-primary-btn" type="button" @click="logout">退出</button>
           </header>
 
-          <section class="page-hero">
-            <div class="page-hero__copy">
-              <span class="page-hero__eyebrow">{{ pageEyebrow }}</span>
-              <h1>{{ pageTitle }}</h1>
-              <p>{{ pageDescription }}</p>
-            </div>
-
-            <div class="page-hero__meta">
-              <div class="page-hero__chip">
-                <span>当前路由</span>
-                <strong>{{ route.path }}</strong>
-              </div>
-            </div>
-          </section>
+          <div class="page-head">
+            <h1>{{ pageTitle }}</h1>
+            <span v-if="pageDescription" class="page-head__sub">{{ pageDescription }}</span>
+          </div>
 
           <section class="page-body">
             <router-view />
@@ -148,9 +129,7 @@ onBeforeUnmount(() => {
 .app-shell {
   display: flex;
   min-height: 100vh;
-  background:
-    radial-gradient(circle at top left, rgba(212, 182, 116, 0.14), transparent 24%),
-    linear-gradient(180deg, #fcfaf5 0%, #f7f1e7 100%);
+  background: var(--admin-paper);
 }
 
 .app-main {
@@ -159,179 +138,119 @@ onBeforeUnmount(() => {
 }
 
 .app-main-inner {
-  width: min(1480px, calc(100% - 32px));
+  width: min(1320px, calc(100% - 48px));
   margin: 0 auto;
-  padding: 14px 0 24px;
+  padding: 0 0 36px;
 }
 
 .shell-topbar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 0 0 14px;
+  gap: 10px;
+  height: 60px;
+  margin-bottom: 22px;
+  border-bottom: 1px solid var(--admin-border);
 }
 
-.shell-topbar__left,
-.shell-topbar__actions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.shell-brand {
-  display: grid;
-  gap: 2px;
-}
-
-.shell-brand__eyebrow {
-  color: var(--admin-text-soft);
-  font-size: 12px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
-.shell-brand strong {
-  color: var(--admin-text);
-  font-size: 18px;
-}
+.shell-spacer { flex: 1; }
 
 .shell-icon-btn,
 .shell-text-btn,
 .shell-primary-btn {
-  border-radius: 999px;
-  padding: 8px 12px;
+  border-radius: 8px;
+  padding: 8px 14px;
   cursor: pointer;
   font: inherit;
+  font-size: 13px;
+  transition: all 0.15s ease;
 }
 
 .shell-icon-btn,
 .shell-text-btn {
-  border: 1px solid var(--admin-border);
-  background: rgba(255, 255, 255, 0.84);
+  border: 1px solid var(--admin-border-strong);
+  background: var(--admin-panel);
   color: var(--admin-text);
+}
+
+.shell-icon-btn:hover,
+.shell-text-btn:hover {
+  border-color: var(--admin-accent);
+  color: var(--admin-accent);
 }
 
 .shell-primary-btn {
-  border: none;
-  background: linear-gradient(135deg, var(--admin-accent), var(--admin-accent-strong));
-  color: #2d1b07;
-  font-weight: 600;
+  border: 1px solid var(--admin-crimson);
+  background: var(--admin-crimson);
+  color: #fff;
+  font-weight: 500;
 }
 
-.page-hero {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(220px, 300px);
+.shell-primary-btn:hover {
+  background: #62141f;
+  border-color: #62141f;
+}
+
+.page-head {
+  display: flex;
+  align-items: baseline;
   gap: 14px;
-  margin-bottom: 14px;
-  padding: 18px 20px;
-  border-radius: 22px;
-  border: 1px solid var(--admin-border-soft);
-  background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(250, 246, 238, 0.96)),
-    rgba(255, 255, 255, 0.98);
-  box-shadow: 0 12px 24px rgba(112, 84, 34, 0.06);
+  margin-bottom: 20px;
 }
 
-.page-hero__eyebrow {
-  display: inline-flex;
-  padding: 5px 10px;
-  border-radius: 999px;
-  background: rgba(214, 173, 92, 0.14);
-  color: #8a6427;
-  font-size: 12px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.page-hero h1 {
-  margin: 12px 0 8px;
-  font-size: clamp(26px, 3.6vw, 34px);
-  line-height: 1.05;
-}
-
-.page-hero p {
+.page-head h1 {
+  position: relative;
   margin: 0;
-  color: var(--admin-text-muted);
-  line-height: 1.7;
+  font-family: var(--admin-display);
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  padding-left: 14px;
 }
 
-.page-hero__meta {
-  display: grid;
-  gap: 10px;
-  align-content: start;
+.page-head h1::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 3px;
+  bottom: 3px;
+  width: 4px;
+  border-radius: 2px;
+  background: var(--admin-accent);
 }
 
-.page-hero__chip {
-  padding: 14px 16px;
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.82);
-  border: 1px solid rgba(214, 173, 92, 0.12);
-}
-
-.page-hero__chip span {
-  display: block;
+.page-head__sub {
   color: var(--admin-text-soft);
-  font-size: 12px;
-  margin-bottom: 6px;
+  font-size: 12.5px;
 }
 
-.page-hero__chip strong {
-  color: var(--admin-text);
-  font-size: 15px;
-  word-break: break-all;
-}
-
-.page-body {
-  min-width: 0;
-}
+.page-body { min-width: 0; }
 
 .app-mask {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.45);
+  background: rgba(15, 23, 42, 0.4);
   z-index: 999;
 }
 
-.app-shell.is-login .app-main {
-  padding: 0;
-}
+.app-shell.is-login .app-main { padding: 0; }
 
 @media (max-width: 980px) {
-  .app-main-inner {
-    width: min(100%, calc(100% - 24px));
-  }
-
-  .page-hero {
-    grid-template-columns: 1fr;
-  }
+  .app-main-inner { width: min(100%, calc(100% - 24px)); }
 }
 
 @media (max-width: 768px) {
-  .app-main-inner {
-    width: min(100%, calc(100% - 20px));
-    padding-top: 10px;
-  }
+  .app-main-inner { width: min(100%, calc(100% - 20px)); }
 
-  .shell-topbar,
-  .shell-topbar__left,
-  .shell-topbar__actions {
+  .shell-topbar {
+    height: auto;
+    padding: 12px 0;
     flex-wrap: wrap;
   }
 
-  .shell-topbar__actions {
-    width: 100%;
-  }
-
-  .shell-text-btn,
-  .shell-primary-btn {
-    flex: 1;
-    justify-content: center;
-  }
-
-  .page-hero {
-    padding: 16px;
-    border-radius: 18px;
+  .page-head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
   }
 }
 </style>

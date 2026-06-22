@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>后台管理 · 重设计预览（全页面）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink:#1b1a17; --ink-soft:#6b675e; --ink-faint:#9a958a;
+    --paper:#f4f3ef; --surface:#fff; --surface-2:#fbfaf7;
+    --line:#e7e3da; --line-strong:#d8d2c5;
+    --gold:#a9772b; --gold-tint:#f1e7d4; --crimson:#7a1d2d; --crimson-tint:#f3e2e4; --green:#3f7a52;
+    --display:"Space Grotesk","PingFang SC","Microsoft YaHei",sans-serif;
+    --body:"PingFang SC","MiSans","Microsoft YaHei",-apple-system,"Segoe UI",sans-serif;
+    --mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:var(--body);color:var(--ink);background:var(--paper);font-size:14px;-webkit-font-smoothing:antialiased;}
+  .app{display:grid;grid-template-columns:232px 1fr;min-height:100vh;}
+
+  /* 侧栏 */
+  .side{background:var(--surface);border-right:1px solid var(--line);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;}
+  .brand{height:60px;display:flex;align-items:center;gap:10px;padding:0 20px;border-bottom:1px solid var(--line);}
+  .brand .mark{width:26px;height:26px;border-radius:7px;flex:0 0 auto;background:linear-gradient(135deg,var(--gold),#caa25a);display:grid;place-items:center;color:#fff;font-family:var(--display);font-weight:700;}
+  .brand b{font-family:var(--display);font-size:15px;}
+  .brand small{display:block;font-size:10.5px;color:var(--ink-faint);letter-spacing:.14em;text-transform:uppercase;font-family:var(--mono);}
+  .nav{padding:14px 12px;overflow-y:auto;flex:1;}
+  .nav__group{margin:18px 0 6px;padding:0 10px;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-faint);font-family:var(--mono);}
+  .nav__group:first-child{margin-top:4px;}
+  .nav__item{display:flex;align-items:center;gap:11px;position:relative;padding:9px 12px;border-radius:8px;color:var(--ink-soft);cursor:pointer;font-size:13.5px;transition:.14s;}
+  .nav__item svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:1.7;flex:0 0 auto;}
+  .nav__item:hover{background:var(--surface-2);color:var(--ink);}
+  .nav__item.active{color:var(--ink);font-weight:600;background:var(--gold-tint);}
+  .nav__item.active::before{content:"";position:absolute;left:-12px;top:8px;bottom:8px;width:3px;border-radius:0 3px 3px 0;background:var(--gold);}
+
+  /* 主区 */
+  .main{min-width:0;display:flex;flex-direction:column;}
+  .topbar{height:60px;display:flex;align-items:center;justify-content:flex-end;gap:10px;padding:0 28px;border-bottom:1px solid var(--line);background:var(--surface);position:sticky;top:0;z-index:5;}
+  .btn{font:inherit;font-size:13px;cursor:pointer;border-radius:8px;padding:7px 14px;border:1px solid var(--line-strong);background:var(--surface);color:var(--ink);transition:.14s;display:inline-flex;align-items:center;gap:6px;}
+  .btn:hover{border-color:var(--gold);color:var(--gold);}
+  .btn--primary{background:var(--crimson);border-color:var(--crimson);color:#fff;}
+  .btn--primary:hover{background:#6a1726;border-color:#6a1726;color:#fff;}
+  .btn--gold{background:var(--gold);border-color:var(--gold);color:#fff;}
+  .btn--gold:hover{background:#946627;border-color:#946627;color:#fff;}
+  .btn--sm{padding:4px 10px;font-size:12px;}
+  .topbar .who{width:30px;height:30px;border-radius:50%;background:var(--gold-tint);display:grid;place-items:center;color:var(--gold);font-family:var(--display);font-weight:700;}
+  .content{padding:24px 28px 48px;max-width:1320px;width:100%;}
+
+  .phead{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:20px;}
+  .phead__title{display:flex;align-items:center;gap:12px;}
+  .phead__title::before{content:"";width:4px;height:22px;border-radius:2px;background:var(--gold);}
+  .phead h1{font-family:var(--display);font-size:22px;font-weight:600;}
+  .phead .sub{color:var(--ink-faint);font-size:12.5px;margin-left:16px;}
+  .phead__actions{display:flex;gap:8px;}
+
+  .panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;}
+  .panel+.panel{margin-top:16px;}
+  .panel__head{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;border-bottom:1px solid var(--line);}
+  .panel__head h2{font-size:13.5px;font-weight:600;display:flex;align-items:center;gap:8px;}
+  .panel__head h2::before{content:"";width:3px;height:13px;background:var(--gold);border-radius:2px;}
+  .panel__body{padding:16px;}
+
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px;}
+  .charts{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;}
+  @media (max-width:900px){.charts{grid-template-columns:1fr;}}
+  .stat{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:15px 16px;}
+  .stat__label{font-size:12px;color:var(--ink-soft);display:flex;align-items:center;gap:6px;}
+  .stat__label svg{width:14px;height:14px;stroke:var(--gold);fill:none;stroke-width:1.7;}
+  .stat__value{font-family:var(--mono);font-size:30px;font-weight:600;line-height:1.1;margin-top:10px;letter-spacing:-.5px;}
+  .stat__delta{font-family:var(--mono);font-size:11.5px;margin-top:6px;}
+  .stat__delta.up{color:var(--green);} .stat__delta.flat{color:var(--ink-faint);}
+
+  .feed__row{display:grid;grid-template-columns:1fr auto;gap:12px;padding:11px 0;border-bottom:1px dashed var(--line);align-items:center;}
+  .feed__row:last-child{border-bottom:none;}
+  .feed__row .who2{font-weight:600;} .feed__row .txt{color:var(--ink-soft);font-size:13px;}
+  .feed__row time{font-family:var(--mono);font-size:11.5px;color:var(--ink-faint);}
+  .grid-2{display:grid;grid-template-columns:1.4fr 1fr;gap:16px;}
+
+  .toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .input,.textarea,select.input{font:inherit;font-size:13px;padding:8px 12px;border:1px solid var(--line-strong);border-radius:8px;background:var(--surface);color:var(--ink);width:240px;}
+  .textarea{width:100%;resize:vertical;min-height:90px;line-height:1.6;}
+  .input::placeholder{color:var(--ink-faint);}
+  .input:focus,.textarea:focus{outline:none;border-color:var(--gold);}
+  .spacer{flex:1;}
+
+  .tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);padding:0 8px;}
+  .tab{padding:11px 14px;font-size:13.5px;color:var(--ink-soft);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;}
+  .tab:hover{color:var(--ink);} .tab.active{color:var(--ink);font-weight:600;border-bottom-color:var(--gold);}
+  .tabpane{display:none;} .tabpane.show{display:block;}
+
+  table.tbl{width:100%;border-collapse:collapse;}
+  .tbl th{text-align:left;font-size:11.5px;font-weight:600;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.06em;padding:11px 16px;border-bottom:1px solid var(--line);background:var(--surface-2);}
+  .tbl td{padding:13px 16px;border-bottom:1px solid var(--line);font-size:13.5px;vertical-align:middle;}
+  .tbl tr:last-child td{border-bottom:none;}
+  .tbl tbody tr:hover{background:var(--surface-2);}
+  .tbl .t-title{font-weight:600;} .tbl .mono{font-family:var(--mono);font-size:12.5px;color:var(--ink-soft);}
+  .chip{display:inline-flex;align-items:center;padding:2px 8px;border-radius:5px;font-size:11.5px;background:var(--surface-2);border:1px solid var(--line);color:var(--ink-soft);margin-right:4px;}
+  .chip--cat{background:var(--gold-tint);border-color:transparent;color:#8a5e1d;}
+  .pager{display:flex;align-items:center;justify-content:flex-end;gap:6px;padding:14px 16px;}
+  .pager b{width:28px;height:28px;display:grid;place-items:center;border-radius:7px;font-family:var(--mono);font-weight:500;font-size:12.5px;border:1px solid var(--line);cursor:pointer;}
+  .pager b.on{background:var(--ink);color:#fff;border-color:var(--ink);}
+
+  .form-row{display:grid;grid-template-columns:130px 1fr;gap:16px;align-items:start;padding:14px 0;border-bottom:1px dashed var(--line);}
+  .form-row:last-child{border-bottom:none;}
+  .form-row>label{font-size:13px;color:var(--ink-soft);padding-top:8px;}
+  .form-row .input,.form-row .textarea{width:min(520px,100%);}
+  .form-row .hint{font-size:11.5px;color:var(--ink-faint);margin-top:6px;}
+  .row-inline{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+
+  .link{color:var(--gold);cursor:pointer;} .link--danger{color:var(--crimson);}
+  .view{display:none;} .view.show{display:block;}
+  .note{max-width:1320px;margin:14px 28px 0;}
+  .badge{display:inline-block;padding:5px 12px;border-radius:6px;font-size:12px;background:var(--gold-tint);color:#8a5e1d;font-family:var(--mono);}
+
+  /* 开关 */
+  .switch{width:38px;height:22px;border-radius:999px;background:var(--line-strong);position:relative;cursor:pointer;flex:0 0 auto;}
+  .switch.on{background:var(--green);}
+  .switch::after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;transition:.16s;}
+  .switch.on::after{left:18px;}
+
+  /* 两栏：列表 + 编辑 */
+  .split{display:grid;grid-template-columns:340px 1fr;gap:16px;align-items:start;}
+  .listcard{padding:12px 14px;border-bottom:1px solid var(--line);cursor:pointer;}
+  .listcard:last-child{border-bottom:none;}
+  .listcard.sel{background:var(--gold-tint);}
+  .listcard .lc-title{font-weight:600;font-size:13.5px;}
+  .listcard .lc-meta{font-family:var(--mono);font-size:11px;color:var(--ink-faint);margin-top:4px;}
+
+  /* 编辑器 */
+  .editor{display:grid;grid-template-columns:1fr 1fr;gap:14px;height:340px;}
+  .editor>div{border:1px solid var(--line);border-radius:8px;padding:12px;overflow:auto;background:var(--surface-2);font-family:var(--mono);font-size:12.5px;line-height:1.7;color:var(--ink-soft);}
+  .editor .prev{font-family:var(--body);color:var(--ink);background:var(--surface);}
+  .editor .prev h3{font-size:16px;margin:10px 0 6px;} .editor .prev p{margin:0 0 8px;line-height:1.7;}
+
+  /* 缩略图 */
+  .thumb{width:48px;height:48px;border-radius:8px;background:linear-gradient(135deg,#e9e2d2,#d8cdb4);border:1px solid var(--line);flex:0 0 auto;}
+  .thumb-row{display:flex;gap:10px;flex-wrap:wrap;}
+  .thumb-lg{width:84px;height:60px;border-radius:8px;background:linear-gradient(135deg,#e9e2d2,#d8cdb4);border:1px solid var(--line);position:relative;}
+  .thumb-lg .x{position:absolute;top:-7px;right:-7px;width:18px;height:18px;border-radius:50%;background:var(--crimson);color:#fff;display:grid;place-items:center;font-size:11px;cursor:pointer;}
+
+  /* 登录 */
+  .login-wrap{position:fixed;inset:0;display:grid;place-items:center;background:radial-gradient(circle at 30% 20%,#faf6ee,#efe9dc);z-index:50;}
+  .login-card{width:360px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:30px 28px;box-shadow:0 24px 60px rgba(80,60,20,.12);}
+  .login-card .mark{width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,var(--gold),#caa25a);display:grid;place-items:center;color:#fff;font-family:var(--display);font-weight:700;font-size:20px;margin-bottom:16px;}
+  .login-card h2{font-family:var(--display);font-size:20px;margin-bottom:4px;}
+  .login-card p{color:var(--ink-faint);font-size:12.5px;margin-bottom:22px;}
+  .login-card .input{width:100%;margin-bottom:12px;}
+  .login-close{position:absolute;top:18px;right:22px;}
+</style>
+</head>
+<body>
+  <div class="app">
+    <aside class="side">
+      <div class="brand"><span class="mark">G</span><div><b>GodLei Blog</b><small>管理台</small></div></div>
+      <nav class="nav">
+        <div class="nav__group">概览</div>
+        <div class="nav__item active" data-view="dash"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>控制台</div>
+        <div class="nav__group">内容与运营</div>
+        <div class="nav__item" data-view="article"><svg viewBox="0 0 24 24"><path d="M4 4h16v16H4zM8 9h8M8 13h8M8 17h5"/></svg>文章</div>
+        <div class="nav__item" data-view="moments"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"/></svg>朋友圈</div>
+        <div class="nav__item" data-view="links"><svg viewBox="0 0 24 24"><path d="M9 15l6-6M10 5l1-1a4 4 0 0 1 6 6l-1 1M14 19l-1 1a4 4 0 0 1-6-6l1-1"/></svg>友链</div>
+        <div class="nav__item" data-view="logs"><svg viewBox="0 0 24 24"><path d="M4 5h16M4 12h16M4 19h10"/></svg>日志</div>
+        <div class="nav__group">设置</div>
+        <div class="nav__item" data-view="settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 13a7 7 0 0 0 0-2l2-1.5-2-3.4-2.3 1a7 7 0 0 0-1.7-1L15 3.5h-4l-.4 2.6a7 7 0 0 0-1.7 1l-2.3-1-2 3.4L6.6 11a7 7 0 0 0 0 2l-2 1.5 2 3.4 2.3-1a7 7 0 0 0 1.7 1l.4 2.6h4l.4-2.6a7 7 0 0 0 1.7-1l2.3 1 2-3.4z"/></svg>站点设置</div>
+      </nav>
+    </aside>
+
+    <div class="main">
+      <header class="topbar">
+        <button class="btn" onclick="document.getElementById('login').style.display='grid'">查看登录页</button>
+        <button class="btn">查看前台 ↗</button>
+        <span class="who">G</span>
+        <button class="btn">退出</button>
+      </header>
+
+      <!-- 控制台 -->
+      <div class="content view show" id="view-dash">
+        <div class="phead"><div class="phead__title"><h1>控制台</h1><span class="sub">全站运行概况</span></div><div class="phead__actions"><button class="btn btn--sm">近 7 天 ▾</button></div></div>
+        <div class="stats">
+          <div class="stat"><div class="stat__label"><svg viewBox="0 0 24 24"><path d="M3 12s3-7 9-7 9 7 9 7-3 7-9 7-9-7-9-7z"/><circle cx="12" cy="12" r="2.5"/></svg>今日访问</div><div class="stat__value">2,418</div><div class="stat__delta up">▲ 12.4% 较昨日</div></div>
+          <div class="stat"><div class="stat__label"><svg viewBox="0 0 24 24"><path d="M4 4h16v16H4zM8 9h8M8 13h6"/></svg>文章</div><div class="stat__value">37</div><div class="stat__delta flat">本月 +3</div></div>
+          <div class="stat"><div class="stat__label"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>评论</div><div class="stat__value">156</div><div class="stat__delta up">▲ 8 待回复</div></div>
+          <div class="stat"><div class="stat__label"><svg viewBox="0 0 24 24"><path d="M9 15l6-6"/></svg>友链</div><div class="stat__value">24</div><div class="stat__delta flat">全部正常</div></div>
+        </div>
+        <div class="charts">
+          <div class="panel"><div class="panel__head"><h2>PV 历史(按天)</h2><span class="link">近 14 天</span></div><div class="panel__body"><div id="pvChart" style="height:230px"></div></div></div>
+          <div class="panel"><div class="panel__head"><h2>UV 历史(按天)</h2><span class="link">近 14 天</span></div><div class="panel__body"><div id="uvChart" style="height:230px"></div></div></div>
+        </div>
+        <div class="grid-2">
+          <div class="panel"><div class="panel__head"><h2>最新评论</h2><span class="link">全部 →</span></div><div class="panel__body">
+            <div class="feed__row"><div><span class="who2">访客 A</span> <span class="txt">在《Java 21 虚拟线程》:写得很清楚…</span></div><time>09:41</time></div>
+            <div class="feed__row"><div><span class="who2">小明</span> <span class="txt">在《Docker 多阶段构建》:确实瘦了一半</span></div><time>昨天</time></div>
+            <div class="feed__row"><div><span class="who2">访客 B</span> <span class="txt">在留言板:友链申请已发邮件</span></div><time>06-16</time></div>
+          </div></div>
+          <div class="panel"><div class="panel__head"><h2>快捷入口</h2></div><div class="panel__body" style="display:grid;gap:10px;">
+            <button class="btn btn--primary" style="justify-content:center;">＋ 写新文章</button>
+            <button class="btn" style="justify-content:center;">发条朋友圈</button>
+            <button class="btn" style="justify-content:center;">新增更新日志</button>
+          </div></div>
+        </div>
+      </div>
+
+      <!-- 文章（列表/分类/标签） -->
+      <div class="content view" id="view-article">
+        <div class="phead"><div class="phead__title"><h1>文章</h1><span class="sub">列表 · 分类 · 标签</span></div>
+          <div class="phead__actions"><button class="btn btn--primary btn--sm" onclick="go('editor')">＋ 新建文章</button></div></div>
+        <div class="panel" data-tabs>
+          <div class="tabs"><div class="tab active" data-tab="t-list">文章列表</div><div class="tab" data-tab="t-cat">分类</div><div class="tab" data-tab="t-tag">标签</div></div>
+
+          <div class="tabpane show" id="t-list">
+            <div class="panel__body"><div class="toolbar"><input class="input" placeholder="搜索标题…"/><button class="btn btn--sm">分类 ▾</button><div class="spacer"></div><span class="mono" style="color:var(--ink-faint);font-size:12px;">共 37 篇</span></div></div>
+            <table class="tbl"><thead><tr><th>标题</th><th>分类</th><th>标签</th><th>更新时间</th><th style="text-align:right;">操作</th></tr></thead><tbody>
+              <tr><td class="t-title">Java 21 虚拟线程不是银弹，但它真的改变了后端并发写法</td><td><span class="chip chip--cat">后端</span></td><td><span class="chip"># Java</span><span class="chip"># 并发</span></td><td class="mono">2026-05-17</td><td style="text-align:right;"><span class="link" onclick="go('editor')">编辑</span> · <span class="link link--danger">删除</span></td></tr>
+              <tr><td class="t-title">用 Docker 多阶段构建给镜像瘦身</td><td><span class="chip chip--cat">DevOps</span></td><td><span class="chip"># Docker</span></td><td class="mono">2026-06-15</td><td style="text-align:right;"><span class="link" onclick="go('editor')">编辑</span> · <span class="link link--danger">删除</span></td></tr>
+              <tr><td class="t-title">GitHub Actions 别再复制粘贴 YAML 了</td><td><span class="chip chip--cat">DevOps</span></td><td><span class="chip"># CI/CD</span></td><td class="mono">2026-05-17</td><td style="text-align:right;"><span class="link" onclick="go('editor')">编辑</span> · <span class="link link--danger">删除</span></td></tr>
+            </tbody></table>
+            <div class="pager"><b>‹</b><b class="on">1</b><b>2</b><b>3</b><b>›</b></div>
+          </div>
+
+          <div class="tabpane" id="t-cat">
+            <div class="panel__body">
+              <div class="toolbar" style="margin-bottom:14px;"><input class="input" placeholder="新增分类名称…"/><input class="input" style="width:140px;" placeholder="父级(可选)"/><button class="btn btn--gold btn--sm">＋ 新增</button></div>
+              <table class="tbl"><thead><tr><th>分类</th><th>文章数</th><th style="text-align:right;">操作</th></tr></thead><tbody>
+                <tr><td class="t-title">后端</td><td class="mono">12</td><td style="text-align:right;"><span class="link">编辑</span> · <span class="link">查看文章</span> · <span class="link link--danger">删除</span></td></tr>
+                <tr><td><span style="color:var(--ink-faint);">└</span> Java</td><td class="mono">7</td><td style="text-align:right;"><span class="link">编辑</span> · <span class="link link--danger">删除</span></td></tr>
+                <tr><td class="t-title">DevOps</td><td class="mono">9</td><td style="text-align:right;"><span class="link">编辑</span> · <span class="link">查看文章</span> · <span class="link link--danger">删除</span></td></tr>
+              </tbody></table>
+            </div>
+          </div>
+
+          <div class="tabpane" id="t-tag">
+            <div class="panel__body">
+              <div class="toolbar" style="margin-bottom:16px;"><input class="input" placeholder="新增标签…"/><button class="btn btn--gold btn--sm">＋ 新增</button></div>
+              <div class="row-inline">
+                <span class="chip chip--cat">Java <b class="mono" style="margin-left:6px;">7</b> ✕</span>
+                <span class="chip chip--cat">并发 <b class="mono" style="margin-left:6px;">4</b> ✕</span>
+                <span class="chip chip--cat">Docker <b class="mono" style="margin-left:6px;">3</b> ✕</span>
+                <span class="chip chip--cat">CI/CD <b class="mono" style="margin-left:6px;">2</b> ✕</span>
+                <span class="chip chip--cat">YAML <b class="mono" style="margin-left:6px;">2</b> ✕</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 文章编辑器 -->
+      <div class="content view" id="view-editor">
+        <div class="phead"><div class="phead__title"><h1>发布文章</h1><span class="sub">正文 · 封面 · 分类 · 标签</span></div>
+          <div class="phead__actions"><button class="btn btn--sm" onclick="go('article')">← 返回列表</button><button class="btn btn--gold btn--sm">保存发布</button></div></div>
+        <div class="panel"><div class="panel__body">
+          <div class="form-row"><label>标题</label><div><input class="input" placeholder="请输入文章标题" value="Java 21 虚拟线程不是银弹"/></div></div>
+          <div class="form-row"><label>标签 / 分类</label><div class="row-inline"><input class="input" style="width:240px;" placeholder="标签，逗号分隔" value="Java,并发"/><input class="input" style="width:200px;" placeholder="分类" value="后端"/></div></div>
+          <div class="form-row"><label>描述</label><div><textarea class="textarea" style="min-height:60px;">梳理虚拟线程在服务端项目中的价值、适用边界和落地建议。</textarea></div></div>
+          <div class="form-row"><label>封面</label><div class="row-inline"><input class="input" style="width:360px;" placeholder="封面图地址"/><button class="btn btn--sm">上传封面</button></div></div>
+          <div class="form-row"><label>短链 / 日期</label><div class="row-inline"><input class="input" style="width:160px;" placeholder="短链"/><input class="input" style="width:140px;" value="2026-05-17"/></div></div>
+        </div></div>
+        <div class="panel"><div class="panel__head"><h2>正文(Markdown)</h2><button class="btn btn--sm">上传图片插入</button></div>
+          <div class="panel__body"><div class="editor">
+            <div># Java 21 虚拟线程<br><br>这两年只要聊到 Java 并发，几乎绕不开虚拟线程。<br><br>## 它真正改变的是什么<br><br>- 抬高了"同步写法"的上限<br>- ...</div>
+            <div class="prev"><h3>Java 21 虚拟线程</h3><p>这两年只要聊到 Java 并发，几乎绕不开虚拟线程。</p><h3>它真正改变的是什么</h3><p>抬高了"同步写法"的上限……</p></div>
+          </div></div>
+        </div>
+      </div>
+
+      <!-- 朋友圈 -->
+      <div class="content view" id="view-moments">
+        <div class="phead"><div class="phead__title"><h1>朋友圈</h1><span class="sub">左侧浏览，右侧发布/编辑</span></div></div>
+        <div class="split">
+          <div class="panel"><div class="panel__head"><h2>动态列表</h2></div>
+            <div class="listcard sel"><div class="lc-title">周末爬山，山顶信号居然满格</div><div class="lc-meta">2026-06-15 · 3 图</div></div>
+            <div class="listcard"><div class="lc-title">新到的机械键盘手感不错</div><div class="lc-meta">2026-06-10 · 1 图</div></div>
+            <div class="listcard"><div class="lc-title">深夜改 bug 的第 N 个夜晚</div><div class="lc-meta">2026-06-02 · 纯文字</div></div>
+          </div>
+          <div class="panel"><div class="panel__head"><h2>发布 / 编辑</h2><button class="btn btn--gold btn--sm">发布</button></div><div class="panel__body">
+            <div class="form-row" style="grid-template-columns:1fr;"><label>内容</label><textarea class="textarea">周末爬山，山顶信号居然满格 📶</textarea></div>
+            <div class="form-row" style="grid-template-columns:1fr;border-bottom:none;"><label>配图</label><div class="thumb-row"><div class="thumb-lg"><span class="x">✕</span></div><div class="thumb-lg"><span class="x">✕</span></div><button class="btn btn--sm" style="height:60px;">＋ 上传</button></div></div>
+          </div></div>
+        </div>
+      </div>
+
+      <!-- 友链 -->
+      <div class="content view" id="view-links">
+        <div class="phead"><div class="phead__title"><h1>友链</h1><span class="sub">分组 · 友链 · 顺序</span></div>
+          <div class="phead__actions"><button class="btn btn--sm">＋ 新增分组</button><button class="btn btn--primary btn--sm">＋ 新增友链</button></div></div>
+        <div class="panel"><div class="panel__head"><h2>技术博客 <span class="mono" style="color:var(--ink-faint);font-weight:400;margin-left:6px;">3</span></h2><span class="link">编辑分组</span></div>
+          <table class="tbl"><thead><tr><th>头像</th><th>名称</th><th>链接</th><th>简介</th><th style="text-align:right;">操作</th></tr></thead><tbody>
+            <tr><td><span class="thumb" style="width:34px;height:34px;border-radius:50%;display:inline-block;"></span></td><td class="t-title">阮一峰的网络日志</td><td class="mono">ruanyifeng.com</td><td style="color:var(--ink-soft);">每周科技爱好者周刊</td><td style="text-align:right;"><span class="link">编辑</span> · <span class="link link--danger">删除</span></td></tr>
+            <tr><td><span class="thumb" style="width:34px;height:34px;border-radius:50%;display:inline-block;"></span></td><td class="t-title">某某的小站</td><td class="mono">example.com</td><td style="color:var(--ink-soft);">前端 & 设计</td><td style="text-align:right;"><span class="link">编辑</span> · <span class="link link--danger">删除</span></td></tr>
+          </tbody></table>
+        </div>
+      </div>
+
+      <!-- 日志 -->
+      <div class="content view" id="view-logs">
+        <div class="phead"><div class="phead__title"><h1>更新日志</h1><span class="sub">版本 · 条目 · 当前生效</span></div>
+          <div class="phead__actions"><button class="btn btn--sm">＋ 新版本</button><button class="btn btn--sm">日志预览 ↗</button></div></div>
+        <div class="split">
+          <div class="panel"><div class="panel__head"><h2>版本</h2></div>
+            <div class="listcard sel"><div class="lc-title">v1.3.0 <span class="chip chip--cat" style="margin-left:6px;">当前</span></div><div class="lc-meta">2026-05-17 · 6 条</div></div>
+            <div class="listcard"><div class="lc-title">v1.2.0</div><div class="lc-meta">2026-04-01 · 9 条</div></div>
+            <div class="listcard"><div class="lc-title">v1.1.0</div><div class="lc-meta">2026-03-27 · 5 条</div></div>
+          </div>
+          <div class="panel"><div class="panel__head"><h2>v1.3.0 条目</h2><div class="row-inline"><button class="btn btn--sm">设为当前</button><button class="btn btn--gold btn--sm">保存</button></div></div><div class="panel__body">
+            <div class="form-row" style="grid-template-columns:1fr;border-bottom:none;"><label>本版条目(每行一条)</label><textarea class="textarea" style="min-height:160px;">文章页：重做详情页布局，目录固定常驻
+存储：接入腾讯云 COS，上传走对象存储
+助手：馨宝适配多模型(OpenAI 兼容)
+首页：移动端适配优化</textarea></div>
+          </div></div>
+        </div>
+      </div>
+
+      <!-- 站点设置（基础/首页/关于/AI助手） -->
+      <div class="content view" id="view-settings">
+        <div class="phead"><div class="phead__title"><h1>站点设置</h1><span class="sub">基础 · 首页 · 关于 · AI 助手</span></div>
+          <div class="phead__actions"><button class="btn btn--sm">查看前台 ↗</button><button class="btn btn--gold btn--sm">保存修改</button></div></div>
+        <div class="panel" data-tabs>
+          <div class="tabs"><div class="tab active" data-tab="s-basic">基础</div><div class="tab" data-tab="s-home">首页</div><div class="tab" data-tab="s-about">关于</div><div class="tab" data-tab="s-ai">AI 助手</div></div>
+
+          <div class="tabpane show" id="s-basic"><div class="panel__body">
+            <div class="form-row"><label>站点名称</label><div><input class="input" value="GodLei Blog"/></div></div>
+            <div class="form-row"><label>站点头像</label><div class="row-inline"><span class="thumb" style="border-radius:50%;"></span><input class="input" style="width:380px;" value="https://cos.godlei8.top/blog/site-avatar/…"/><button class="btn btn--sm">上传</button></div></div>
+            <div class="form-row"><label>页脚 / 备案</label><div><input class="input" placeholder="© 2026 GodLei · 备案号"/></div></div>
+          </div></div>
+
+          <div class="tabpane" id="s-home"><div class="panel__body">
+            <div class="form-row"><label>欢迎语</label><div class="row-inline"><input class="input" style="width:160px;" value="WELCOME TO"/><input class="input" style="width:200px;" value="GODLEI BLOG"/></div></div>
+            <div class="form-row"><label>简介(每行一句)</label><div><textarea class="textarea">这里是 GodLei 的博客。
+很高兴与你相遇。</textarea></div></div>
+            <div class="form-row"><label>公告(每行一条)</label><div><textarea class="textarea">新站持续重构完善中。
+遇到异常我会继续补齐。</textarea></div></div>
+            <div class="form-row"><label>社交入口</label><div>
+              <div class="row-inline" style="margin-bottom:8px;"><input class="input" style="width:120px;" value="GitHub"/><input class="input" style="width:120px;" value="fab fa-github"/><input class="input" style="width:240px;" value="https://github.com/…"/><span class="link link--danger">✕</span></div>
+              <div class="row-inline"><input class="input" style="width:120px;" value="Bilibili"/><input class="input" style="width:120px;" value="fab fa-bilibili"/><input class="input" style="width:240px;" value="https://space.bilibili.com/…"/><span class="link link--danger">✕</span></div>
+              <button class="btn btn--sm" style="margin-top:10px;">＋ 添加一项</button>
+            </div></div>
+            <div class="form-row"><label>首页背景图</label><div class="row-inline"><input class="input" style="width:380px;" value="https://cos.godlei8.top/blog/home-background/…"/><button class="btn btn--sm">上传</button></div></div>
+          </div></div>
+
+          <div class="tabpane" id="s-about"><div class="panel__body">
+            <div class="form-row" style="grid-template-columns:1fr;border-bottom:none;"><label>关于页 · 立绘/素材图</label><div class="thumb-row">
+              <div class="thumb-lg"><span class="x">✕</span></div><div class="thumb-lg"><span class="x">✕</span></div><div class="thumb-lg"><span class="x">✕</span></div><button class="btn btn--sm" style="height:60px;">＋ 上传</button>
+            </div></div>
+          </div></div>
+
+          <div class="tabpane" id="s-ai"><div class="panel__body">
+            <div class="form-row"><label>启用馨宝</label><div class="row-inline"><span class="switch on"></span><span style="color:var(--ink-soft);font-size:12.5px;">前台显示 AI 助手悬浮入口</span></div></div>
+            <div class="form-row"><label>供应商 / 模型</label><div class="row-inline"><select class="input" style="width:160px;"><option>DeepSeek</option><option>OpenAI</option><option>Qwen</option><option>Kimi</option><option>自定义</option></select><input class="input" style="width:220px;" value="deepseek-v4-pro"/></div></div>
+            <div class="form-row"><label>Base URL</label><div><input class="input" style="width:380px;" placeholder="留空用供应商默认" value="https://api.deepseek.com/v1"/></div></div>
+            <div class="form-row"><label>API Key</label><div class="row-inline"><input class="input" style="width:300px;" type="password" value="••••••••••••"/><button class="btn btn--sm">更新</button><span class="chip" style="background:var(--crimson-tint);border-color:transparent;color:var(--crimson);">未配置</span></div><div class="hint" style="margin-left:0;">仅存服务端，前台不可见。</div></div>
+            <div class="form-row"><label>温度 / top-p</label><div class="row-inline"><input class="input" style="width:90px;" value="0.7"/><input class="input" style="width:90px;" value="0.95"/><button class="btn btn--sm">测试连通性</button></div></div>
+            <div class="form-row"><label>前台文案</label><div class="row-inline"><input class="input" style="width:140px;" value="馨宝"/><input class="input" style="width:300px;" value="你好，我是馨宝，有什么可以帮你？"/></div></div>
+          </div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 登录页预览 -->
+  <div class="login-wrap" id="login" style="display:none;">
+    <button class="btn login-close" onclick="document.getElementById('login').style.display='none'">关闭预览 ✕</button>
+    <div class="login-card">
+      <div class="mark">G</div>
+      <h2>管理台登录</h2>
+      <p>GodLei Blog · Admin</p>
+      <input class="input" placeholder="用户名" value="admin"/>
+      <input class="input" type="password" placeholder="密码" value="••••••"/>
+      <button class="btn btn--primary" style="width:100%;justify-content:center;margin-top:6px;">登录</button>
+    </div>
+  </div>
+
+  <div class="note"><span class="badge">★ 后台重设计 · 全页面预览 · 侧栏与页签均可点击切换</span></div>
+
+<script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+<script>
+  const items=document.querySelectorAll('.nav__item');
+  const map={dash:'view-dash',article:'view-article',editor:'view-editor',moments:'view-moments',links:'view-links',logs:'view-logs',settings:'view-settings'};
+  function go(v){
+    items.forEach(x=>x.classList.toggle('active', x.dataset.view===v));
+    Object.values(map).forEach(id=>document.getElementById(id).classList.remove('show'));
+    document.getElementById(map[v]).classList.add('show');
+    window.scrollTo(0,0);
+  }
+  items.forEach(it=>it.addEventListener('click',()=>go(it.dataset.view)));
+  document.querySelectorAll('[data-tabs]').forEach(box=>{
+    const tabs=box.querySelectorAll('.tab');
+    tabs.forEach(tab=>tab.addEventListener('click',()=>{
+      tabs.forEach(x=>x.classList.remove('active')); tab.classList.add('active');
+      box.querySelectorAll('.tabpane').forEach(p=>p.classList.remove('show'));
+      box.querySelector('#'+tab.dataset.tab).classList.add('show');
+    }));
+  });
+  document.querySelectorAll('.switch').forEach(s=>s.addEventListener('click',()=>s.classList.toggle('on')));
+
+  // PV / UV 访问统计图（保留自现有控制台，套用墨+金主题）
+  function initCharts(){
+    if(!window.echarts) return;
+    const dates=['06-05','06-06','06-07','06-08','06-09','06-10','06-11','06-12','06-13','06-14','06-15','06-16','06-17'];
+    const base=()=>({grid:{left:32,right:14,top:12,bottom:22},tooltip:{trigger:'axis'},
+      xAxis:{type:'category',boundaryGap:false,data:dates,axisTick:{show:false},axisLine:{lineStyle:{color:'#e7e3da'}},axisLabel:{color:'#9a958a',fontFamily:'JetBrains Mono',fontSize:10,interval:2}},
+      yAxis:{type:'value',minInterval:1,splitLine:{lineStyle:{color:'#efece4'}},axisLine:{show:false},axisTick:{show:false},axisLabel:{color:'#9a958a',fontFamily:'JetBrains Mono',fontSize:10}}});
+    const pv=echarts.init(document.getElementById('pvChart'));
+    pv.setOption(Object.assign(base(),{series:[{type:'line',smooth:true,symbol:'circle',symbolSize:5,data:[3,1,0,3,2,3,0,0,0,5,1,8,2],itemStyle:{color:'#a9772b',borderColor:'#fff',borderWidth:1.5},lineStyle:{color:'#a9772b',width:2.4},areaStyle:{color:'rgba(169,119,43,0.12)'}}]}));
+    const uv=echarts.init(document.getElementById('uvChart'));
+    uv.setOption(Object.assign(base(),{series:[{type:'line',smooth:true,symbol:'circle',symbolSize:5,data:[3,1,0,3,2,0,3,0,0,4,1,4,1],itemStyle:{color:'#7a1d2d',borderColor:'#fff',borderWidth:1.5},lineStyle:{color:'#7a1d2d',width:2.4},areaStyle:{color:'rgba(122,29,45,0.10)'}}]}));
+    window.addEventListener('resize',()=>{pv.resize();uv.resize();});
+  }
+  initCharts();
+</script>
+</body>
+</html>
