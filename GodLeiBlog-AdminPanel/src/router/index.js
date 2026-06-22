@@ -15,6 +15,7 @@ const HomeSettings = () => import('@/views/HomeSettings.vue')
 const AboutSettings = () => import('@/views/AboutSettings.vue')
 const AssistantSettings = () => import('@/views/AssistantSettings.vue')
 const Moments = () => import('@/views/Moments.vue')
+const Settings = () => import('@/views/Settings.vue')
 
 const routes = [
   { path: '/login', name: 'Login', component: Login, meta: { requiresAuth: false } },
@@ -25,10 +26,7 @@ const routes = [
   { path: '/moments', name: 'Moments', component: Moments, meta: { requiresAuth: true, title: '朋友圈管理', description: '在左侧浏览动态列表，在右侧发布和编辑朋友圈内容。', eyebrow: 'Moments' } },
   { path: '/links', name: 'Links', component: Links, meta: { requiresAuth: true, title: '友链管理', description: '维护友链分组、友链资料与展示顺序。', eyebrow: 'Links' } },
   { path: '/logs', name: 'Logs', component: Logs, meta: { requiresAuth: true, title: '日志管理', description: '维护站点更新日志与当前生效版本。', eyebrow: 'Changelog' } },
-  { path: '/site-settings', name: 'SiteSettings', component: SiteSettings, meta: { requiresAuth: true, title: '站点配置', description: '维护全站公共基础信息，包括站点名称和头像。', eyebrow: 'Settings' } },
-  { path: '/home-settings', name: 'HomeSettings', component: HomeSettings, meta: { requiresAuth: true, title: '首页管理', description: '独立维护首页欢迎区、公告区和社交入口。', eyebrow: 'Settings' } },
-  { path: '/about-settings', name: 'AboutSettings', component: AboutSettings, meta: { requiresAuth: true, title: '关于管理', description: '独立维护关于页展示所需的素材图列表。', eyebrow: 'Settings' } },
-  { path: '/assistant-settings', name: 'AssistantSettings', component: AssistantSettings, meta: { requiresAuth: true, title: 'AI 助手', description: '维护馨宝的前台文案，并查看服务端运行状态。', eyebrow: 'Settings' } },
+  { path: '/settings', name: 'Settings', component: Settings, meta: { requiresAuth: true, title: '站点设置', description: '站点、首页、关于与 AI 助手的统一配置。', eyebrow: 'Settings' } },
   { path: '/logs/content', name: 'LogsView', component: LogsView, meta: { requiresAuth: true, title: '日志预览', description: '查看整理后的日志内容输出。', eyebrow: 'Changelog' } },
   { path: '/add-article', name: 'AddArticle', component: AddArticle, meta: { requiresAuth: true, title: '发布文章', description: '编辑文章正文、封面、分类与标签。', eyebrow: 'Editor' } },
   { path: '/edit-article/:id', name: 'EditArticle', component: AddArticle, meta: { requiresAuth: true, title: '编辑文章', description: '继续完善文章内容并保存更新。', eyebrow: 'Editor' } },

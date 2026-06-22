@@ -1,5 +1,8 @@
 <template>
-  <div class="article-list page-stack">
+  <div class="article-page">
+    <el-tabs v-model="activeTab" class="article-tabs">
+      <el-tab-pane label="文章列表" name="list">
+        <div class="article-list page-stack">
     <section class="page-card">
       <div class="page-toolbar page-toolbar--split">
         <div class="page-toolbar__group">
@@ -82,11 +85,24 @@
         class="page-pagination"
       />
     </section>
+        </div>
+      </el-tab-pane>
+
+      <el-tab-pane label="分类" name="category" lazy>
+        <CategoryView />
+      </el-tab-pane>
+
+      <el-tab-pane label="标签" name="tag" lazy>
+        <TagView />
+      </el-tab-pane>
+    </el-tabs>
   </div>
 </template>
 
 <script>
 import { deletePost, getPostList } from '@/api'
+import CategoryView from './Category.vue'
+import TagView from './Tag.vue'
 
 const normalizeMediaUrl = (url) => {
   const source = typeof url === 'string' ? url.trim() : ''
@@ -99,8 +115,10 @@ const normalizeMediaUrl = (url) => {
 
 export default {
   name: 'Article',
+  components: { CategoryView, TagView },
   data() {
     return {
+      activeTab: 'list',
       articles: [],
       total: 0,
       currentPage: 1,

@@ -19,6 +19,7 @@ const ROUTE_TITLES = {
   Moments: '朋友圈管理',
   Links: '友链管理',
   Logs: '日志管理',
+  Settings: '站点设置',
   SiteSettings: '站点配置',
   HomeSettings: '首页管理',
   AboutSettings: '关于管理',

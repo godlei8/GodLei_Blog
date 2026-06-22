@@ -54,8 +54,6 @@ export default {
           label: '内容',
           items: [
             { path: '/article', label: '文章', icon: I.article },
-            { path: '/category', label: '分类', icon: I.category },
-            { path: '/tag', label: '标签', icon: I.tag },
             { path: '/moments', label: '朋友圈', icon: I.moment }
           ]
         },
@@ -69,10 +67,7 @@ export default {
         {
           label: '设置',
           items: [
-            { path: '/site-settings', label: '站点配置', icon: I.site },
-            { path: '/home-settings', label: '首页', icon: I.home },
-            { path: '/about-settings', label: '关于', icon: I.about },
-            { path: '/assistant-settings', label: 'AI 助手', icon: I.ai }
+            { path: '/settings', label: '站点设置', icon: I.site }
           ]
         }
       ]

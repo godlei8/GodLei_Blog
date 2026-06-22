@@ -1,7 +1,7 @@
 <template>
   <div class="site-settings page-card">
-    <section class="settings-hero">
-      <div class="settings-hero__copy">
+    <section class="settings-hero" :class="{ 'is-embedded': embedded }">
+      <div v-if="!embedded" class="settings-hero__copy">
         <span class="settings-hero__eyebrow">{{ eyebrow }}</span>
         <h2>{{ title }}</h2>
         <p>{{ description }}</p>
@@ -12,6 +12,13 @@
           </span>
           <span class="settings-hero__meta-text">{{ statusDescription }}</span>
         </div>
+      </div>
+
+      <div v-else class="settings-hero__status">
+        <span class="settings-status" :class="{ 'is-dirty': isDirty, 'is-busy': loading || saving }">
+          {{ statusText }}
+        </span>
+        <span class="settings-hero__meta-text">{{ statusDescription }}</span>
       </div>
 
       <div class="settings-hero__actions">
@@ -39,9 +46,10 @@
 </template>
 
 <script setup>
-import { computed, useSlots } from 'vue'
+import { computed, inject, useSlots } from 'vue'
 
 const slots = useSlots()
+const embedded = inject('siteSettingsEmbedded', false)
 const hasPreview = computed(() => Boolean(slots.preview))
 
 defineProps({
@@ -87,6 +95,20 @@ defineProps({
 <style scoped>
 .site-settings {
   padding: 16px;
+}
+
+.settings-hero.is-embedded {
+  padding-bottom: 0;
+  border-bottom: none;
+  margin-bottom: 6px;
+  align-items: center;
+}
+
+.settings-hero__status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .settings-hero {
