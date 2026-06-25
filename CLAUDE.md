@@ -75,3 +75,23 @@ MyBatis mapper XML 位于 `blog-server/src/main/resources/cn/godlei/blogserver/m
 ## CI/CD 与部署
 
 `.github/workflows/` 有三条独立流水线：`deploy-backend.yml`、`deploy-frontend.yml`、`deploy-adminpanel.yml`（构建 + SSH 部署）。生产参考配置（Nginx vhost、systemd unit、安装/启动脚本）位于 `deploy/aliyun-ecs/`。数据库设计文档见 `docs/DATABASE_DESIGN.md`（及 `_EN` 英文版）。
+
+> 注意：生产实际采用 **systemd + jar + nginx**（`/opt/godleiblog/`，服务器 `8.137.187.70` / `godlei8.top`），而非上述 docker 流水线。详见 `docs/project_notes/key_facts.md` 与 `decisions.md`（ADR-003）。
+
+## 项目记忆系统（跨会话）
+
+本项目在 `docs/project_notes/` 维护institutional knowledge，确保跨会话/跨工具（Claude Code、Cursor 等）一致。**每个会话开局应先了解这些文件，新会话据此快速接上前面的进度。**
+
+### 记忆文件
+- **`bugs.md`** —— 踩过的坑：现象、根因、解决方案、预防。
+- **`decisions.md`** —— 架构决策记录（ADR），含上下文与权衡。
+- **`key_facts.md`** —— 配置/端口/URL/凭据**位置**（⚠️ 不写明文密钥，本文件入库）。
+- **`issues.md`** —— 工作日志：已完成 / 进行中 / 待办。
+
+### 记忆协议
+- **提架构改动前**：查 `decisions.md`，别和既有 ADR 冲突；要改先说明理由并更新该 ADR。
+- **遇到报错/bug**：先搜 `bugs.md`，有现成解法就用；解决新 bug 后补一条。
+- **查配置/部署**：先看 `key_facts.md`，优先用记录的事实而非臆测。
+- **完成一块工作**：在 `issues.md` 记一条（日期 + 简述 + 状态）。
+- **用户说"记一下/更新记忆"**：按对应文件的格式（项目符号、日期、简洁）补写。
+- **绝不**把明文密钥/密码写进任何入库文件（含 `key_facts.md`）。
